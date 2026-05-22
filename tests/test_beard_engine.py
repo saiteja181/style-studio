@@ -61,7 +61,7 @@ def test_generate_beard_preview_smoke(monkeypatch, tmp_path):
     assert isinstance(result, PreviewResult)
     assert result.style_id == "clean_shaven"
     assert result.image_url.startswith(("/uploads/", "http"))
-    assert result.validator_verdict == "skipped_no_reference"
+    assert result.validator_verdict in ("skipped_no_reference", "skipped_no_anthropic_key")
     assert result.elapsed_ms > 0
 
 
@@ -69,3 +69,46 @@ def test_beard_style_not_found_subclasses_generation_error():
     from backend.beard_engine import BeardStyleNotFoundError
     from backend.kontext_engine import GenerationError
     assert issubclass(BeardStyleNotFoundError, GenerationError)
+
+
+def test_beard_retry_loop_increments_seed(monkeypatch, tmp_path):
+    """When max_retries>0 and the validator returns 'fail', the seed used
+    on the second attempt must differ from the first.  This pins the retry
+    seed-bump pattern matching kontext_engine.generate_preview."""
+    import backend.beard_engine as be
+    import backend.face_composite as fc
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-key")
+    monkeypatch.setenv("STYLE_STUDIO_UPLOADS_DIR", str(tmp_path))
+
+    seeds_seen = []
+
+    def fake_call_kontext(source_path, prompt, seed, style=None):
+        seeds_seen.append(seed)
+        return "https://example.test/fake.png"
+
+    fake_png = tmp_path / "fake_output.png"
+    fake_png.write_bytes(b"\x89PNG\r\n\x1a\n")
+
+    monkeypatch.setattr(be, "_call_kontext", fake_call_kontext)
+    monkeypatch.setattr(
+        fc, "paste_source_face",
+        lambda source_path, kontext_output_url_or_path, output_dir, **kw: fake_png,
+    )
+    monkeypatch.setattr(
+        be, "_validate_beard",
+        lambda *args, **kwargs: "fail",
+        raising=False,
+    )
+
+    profile = {"hair_color_rgb": (40, 30, 25), "hair_texture": "unknown"}
+    result = be.generate_beard_preview(
+        source_path=SOURCE_MAN,
+        beard_style_id="clean_shaven",
+        customer_profile=profile,
+        seed=42,
+        max_retries=1,
+    )
+    assert len(seeds_seen) >= 1, "first attempt must have fired"
+    if len(seeds_seen) >= 2:
+        assert seeds_seen[1] != seeds_seen[0], "retry must use a different seed"

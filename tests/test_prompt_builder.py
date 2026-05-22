@@ -80,3 +80,19 @@ def test_build_edit_prompt_includes_imperative_clause():
     )
     assert "Keep the face" in out, "identity-preservation clause must remain"
     assert "Change ONLY the hairstyle to:" in out, "Kontext wrapper must remain"
+
+
+def test_build_edit_prompt_includes_no_forelock_clause():
+    """The build_edit_prompt output must contain the explicit anti-forelock
+    instruction added in sub-project 8 to stop Kontext from inventing a
+    dramatic single strand crossing the face on male short cuts."""
+    from backend.prompt_builder import build_edit_prompt
+    from pathlib import Path
+    style = {"name": "Test Cut", "prompt_template": "a short crop"}
+    profile = {"hair_color_rgb": (40, 30, 25), "hair_texture": "unknown"}
+    out = build_edit_prompt(
+        style=style, customer_profile=profile,
+        source_path=Path("/tmp/nope.jpg"), reference_path=None,
+    )
+    assert "asymmetric forelock" in out.lower() or "single dramatic strand" in out.lower()
+    assert "extra hair lock" in out.lower()

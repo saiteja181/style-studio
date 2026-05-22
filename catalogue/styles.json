@@ -21,7 +21,8 @@
       "ear_level_ratio": 0.70,
       "feather_frac": 0.018
     },
-    "guidance": 55.0
+    "guidance": 55.0,
+    "upsampling": false
   },
   {
     "id": "mens_voluminous_top",
@@ -78,7 +79,8 @@
       "ear_level_ratio": 0.82,
       "feather_frac": 0.024
     },
-    "guidance": 50.0
+    "guidance": 50.0,
+    "upsampling": false
   },
   {
     "id": "mens_curly_volume",
@@ -108,7 +110,8 @@
     "cultural": ["modern", "classic"],
     "maintenance": "medium",
     "popularity_boost": 3,
-    "style_traits": ["side-part", "structured", "sleek", "professional", "classic"]
+    "style_traits": ["side-part", "structured", "sleek", "professional", "classic"],
+    "upsampling": false
   },
   {
     "id": "mens_textured_crop",
@@ -131,7 +134,8 @@
       "ear_level_ratio": 0.72,
       "feather_frac": 0.020
     },
-    "guidance": 55.0
+    "guidance": 55.0,
+    "upsampling": false
   },
   {
     "id": "mens_buzz_cut",
@@ -147,7 +151,8 @@
     "maintenance": "low",
     "popularity_boost": 4,
     "quality_tier": "high",
-    "style_traits": ["buzz cut", "shaved", "very short", "structured", "low maintenance"]
+    "style_traits": ["buzz cut", "shaved", "very short", "structured", "low maintenance"],
+    "upsampling": false
   },
   {
     "id": "mens_top_knot",

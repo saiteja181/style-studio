@@ -12,6 +12,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Optional
 
+import replicate
+
 logger = logging.getLogger(__name__)
 
 KONTEXT_MODEL = "black-forest-labs/flux-kontext-pro"
@@ -45,6 +47,7 @@ def _call_kontext(
     prompt: str,
     seed: int,
     safety_tolerance: int = 2,
+    style: Optional[dict] = None,
 ) -> str:
     """Single Replicate call.  Returns the output URL string.
 
@@ -53,10 +56,6 @@ def _call_kontext(
     """
     if not os.getenv("REPLICATE_API_TOKEN"):
         raise GenerationError("REPLICATE_API_TOKEN not set in environment")
-    try:
-        import replicate
-    except ImportError as e:
-        raise GenerationError("replicate SDK not installed") from e
 
     try:
         with Path(source_path).open("rb") as img_f:
@@ -68,13 +67,14 @@ def _call_kontext(
                     "aspect_ratio": "match_input_image",
                     "output_format": "png",
                     "safety_tolerance": safety_tolerance,
-                    # Kontext upsamples the prompt internally before generation
-                    # (its LLM rewrites short prompts into more detailed ones).
-                    # Trade-off: weaker seed determinism (same seed may produce
-                    # slightly different outputs as the upsampler resamples) +
-                    # ~1-2s extra GPU time, in exchange for noticeably better
-                    # adherence to short style prompts.  Net win.
-                    "prompt_upsampling": True,
+                    # Per-style override added in sub-project 8: short male
+                    # cuts (pompadour / korean fringe / textured crop / buzz /
+                    # classic side part) set upsampling=False because the
+                    # upsampler was inventing a dramatic forelock-strand across
+                    # the face on those styles.
+                    "prompt_upsampling": (
+                        style.get("upsampling", True) if style is not None else True
+                    ),
                     "seed": seed,
                 },
             )
@@ -150,7 +150,7 @@ def generate_preview(
             source_path=source_path, reference_path=ref_path,
         )
 
-        raw_url = _call_kontext(source_path, final_prompt, attempt_seed)
+        raw_url = _call_kontext(source_path, final_prompt, attempt_seed, style=style)
         composited = paste_source_face(
             source_path=source_path,
             kontext_output_url_or_path=raw_url,

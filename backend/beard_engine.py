@@ -39,6 +39,7 @@ def generate_beard_preview(
     beard_style_id: str,
     customer_profile: dict,
     seed: int = 42,
+    max_retries: int = 1,
 ) -> PreviewResult:
     """Run a beard-only preview through FLUX Kontext.
 
@@ -67,14 +68,31 @@ def generate_beard_preview(
     )
 
     started = time.time()
-    raw_url = _call_kontext(source_path, prompt, seed)
-    composited = paste_source_face(
-        source_path=source_path,
-        kontext_output_url_or_path=raw_url,
-        output_dir=uploads_dir,
-        mode="beard",
-    )
-    final_image_url = f"/uploads/{composited.name}"
+    attempt_idx = -1
+    verdict = "skipped_no_anthropic_key"
+    final_image_url = None
+
+    for attempt_idx in range(max_retries + 1):
+        attempt_seed = seed if attempt_idx == 0 else seed + 1000 + attempt_idx
+        raw_url = _call_kontext(source_path, prompt, attempt_seed)
+        composited = paste_source_face(
+            source_path=source_path,
+            kontext_output_url_or_path=raw_url,
+            output_dir=uploads_dir,
+            mode="beard",
+        )
+        final_image_url = f"/uploads/{composited.name}"
+
+        # Beard catalogue has no reference photos today, so the validator
+        # branch never fires in production.  When references are added in
+        # a future sub-project, _validate_beard can be wired in here.
+        if not os.getenv("ANTHROPIC_API_KEY"):
+            verdict = "skipped_no_anthropic_key"
+            break
+        verdict = "skipped_no_reference"
+        break
+
+    retries = max(0, min(attempt_idx, max_retries))
     elapsed_ms = int((time.time() - started) * 1000)
 
     return PreviewResult(
@@ -83,8 +101,8 @@ def generate_beard_preview(
         style_name=style.get("name", beard_style_id),
         prompt=prompt,
         seed=seed,
-        validator_verdict="skipped_no_reference",
-        retries=0,
+        validator_verdict=verdict,
+        retries=retries,
         elapsed_ms=elapsed_ms,
     )
 

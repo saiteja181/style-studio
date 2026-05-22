@@ -144,7 +144,7 @@ def test_retries_counter_capped_at_max_retries(monkeypatch, tmp_path):
     # Stub out the actual Replicate + composite + validator calls.
     monkeypatch.setattr(
         ke, "_call_kontext",
-        lambda source_path, prompt, seed: "https://example.test/fake.png",
+        lambda source_path, prompt, seed, style=None: "https://example.test/fake.png",
     )
     fake_png = tmp_path / "fake_output.png"
     fake_png.write_bytes(b"\x89PNG\r\n\x1a\n")  # minimal PNG header bytes
@@ -201,3 +201,40 @@ def test_style_not_found_error_is_generation_error():
     refactor breaking the exception hierarchy."""
     from backend.kontext_engine import StyleNotFoundError, GenerationError
     assert issubclass(StyleNotFoundError, GenerationError)
+
+
+def test_call_kontext_reads_per_style_upsampling_override(monkeypatch):
+    """When a style declares upsampling=false, _call_kontext must send
+    prompt_upsampling=False to Replicate.  Defaults to True otherwise."""
+    import backend.kontext_engine as ke
+
+    captured = {}
+
+    def fake_run(model_ref, input=None):
+        captured["payload"] = input
+        return "https://example.test/fake.png"
+
+    monkeypatch.setenv("REPLICATE_API_TOKEN", "fake-token")
+    monkeypatch.setattr(ke, "replicate", type("R", (), {"run": staticmethod(fake_run)})())
+
+    # Style with upsampling explicitly off
+    ke._call_kontext(
+        source_path=SOURCE_MAN, prompt="test prompt", seed=42,
+        style={"upsampling": False},
+    )
+    assert captured["payload"]["prompt_upsampling"] is False
+
+    # Style without upsampling key -> default True
+    captured.clear()
+    ke._call_kontext(
+        source_path=SOURCE_MAN, prompt="test prompt", seed=42,
+        style={"name": "no override"},
+    )
+    assert captured["payload"]["prompt_upsampling"] is True
+
+    # No style argument -> default True
+    captured.clear()
+    ke._call_kontext(
+        source_path=SOURCE_MAN, prompt="test prompt", seed=42,
+    )
+    assert captured["payload"]["prompt_upsampling"] is True
