@@ -21,13 +21,7 @@ from backend.face_analysis import analyze_face
 from backend.customer_analysis import analyze_customer, AnalysisError
 from backend.style_matcher import recommend_styles
 from backend.input_pipeline import prepare_upload, PreflightError
-from backend.inpaint import (
-    generate_preview_inpaint,
-    generate_preview_auto,
-    generate_preview_expert,
-    generate_preview_erase_then_inpaint,
-    InpaintError,
-)
+from backend.kontext_engine import generate_preview, GenerationError
 
 load_dotenv()
 
@@ -46,7 +40,7 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title="Style Studio API",
-    version="0.2.0",
+    version="0.3.0",
     description="Indian hairstyle consultation + preview generation for salons.",
 )
 
@@ -73,6 +67,7 @@ if FRONTEND_DIR.exists():
 class HealthResponse(BaseModel):
     status: str
     version: str
+    engine: str
     catalogue_styles: int
     replicate_configured: bool
     anthropic_configured: bool
@@ -83,6 +78,7 @@ def health() -> HealthResponse:
     return HealthResponse(
         status="ok",
         version=app.version,
+        engine="flux-kontext-pro",
         catalogue_styles=_load_catalogue_count(),
         replicate_configured=bool(os.getenv("REPLICATE_API_TOKEN")),
         anthropic_configured=bool(os.getenv("ANTHROPIC_API_KEY")),
@@ -156,40 +152,33 @@ async def consult(
 async def generate_batch(
     image: UploadFile = File(...),
     style_ids: str = Form(...),     # comma-separated list
-    mode: str = Form("transform"),
     seed: Optional[int] = Form(42),
 ) -> dict:
-    """Generate multiple style previews in parallel (one FLUX call per style,
-    fired concurrently). Returns a dict of {style_id: result_or_error}.
-
-    Salon use case: customer picks their top 3 styles from the recommendations,
-    sees all 3 previews ready in ~60-90s instead of waiting 3-5 min sequentially.
+    """Generate multiple previews in parallel.  Returns
+    {style_id: PreviewResult.to_dict() | {"error": "..."}}.
     """
     import asyncio
     _validate_image_upload(image)
     saved_path = await _save_upload(image)
-    ids = [s.strip() for s in style_ids.split(",") if s.strip()]
 
-    if not os.getenv("REPLICATE_API_TOKEN"):
-        raise HTTPException(status_code=503,
-                            detail="REPLICATE_API_TOKEN not configured")
+    profile = analyze_customer(
+        selfie_path=saved_path,
+        use_vision_lm=bool(os.getenv("ANTHROPIC_API_KEY")),
+    ).to_dict()
+
+    ids = [s.strip() for s in style_ids.split(",") if s.strip()]
+    loop = asyncio.get_event_loop()
 
     def _gen_one(sid: str) -> dict:
         try:
-            if mode == "transform":
-                r = generate_preview_erase_then_inpaint(
-                    selfie_path=saved_path, style_id=sid, seed=seed)
-            elif mode == "expert":
-                r = generate_preview_expert(
-                    selfie_path=saved_path, style_id=sid, seed=seed)
-            else:
-                r = generate_preview_inpaint(
-                    selfie_path=saved_path, style_id=sid, seed=seed)
-            return {"status": "ok", **r.to_dict()}
+            r = generate_preview(
+                source_path=saved_path, style_id=sid,
+                customer_profile=profile, seed=seed if seed is not None else 42,
+            )
+            return r.to_dict()
         except Exception as e:
-            return {"status": "error", "style_id": sid, "detail": str(e)}
+            return {"error": str(e), "style_id": sid}
 
-    loop = asyncio.get_event_loop()
     results = await asyncio.gather(
         *[loop.run_in_executor(None, _gen_one, sid) for sid in ids],
         return_exceptions=False,
@@ -201,56 +190,29 @@ async def generate_batch(
 async def generate(
     image: UploadFile = File(...),
     style_id: str = Form(...),
-    mode: str = Form("expert"),
     seed: Optional[int] = Form(42),
 ) -> dict:
-    """Generate a hairstyle preview for the uploaded photo + style.
+    """Generate a single hairstyle preview using FLUX Kontext.
 
-    mode: "expert" (Claude consult + FLUX, best quality, requires ANTHROPIC_API_KEY)
-          | "auto" (Qwen2-VL caption + FLUX)
-          | "manual" (uses catalogue prompt_template + FLUX)
+    Returns PreviewResult.to_dict() shape (see backend.kontext_engine).
     """
     _validate_image_upload(image)
     saved_path = await _save_upload(image)
 
-    if not os.getenv("REPLICATE_API_TOKEN"):
-        raise HTTPException(status_code=503,
-                            detail="REPLICATE_API_TOKEN not configured")
+    profile = analyze_customer(
+        selfie_path=saved_path,
+        use_vision_lm=bool(os.getenv("ANTHROPIC_API_KEY")),
+    ).to_dict()
 
     try:
-        if mode == "transform":
-            # Erase existing hair, then inpaint the new style on bald canvas.
-            # Best for DRAMATIC transformations (straight->curly, short->long, etc.).
-            if not os.getenv("ANTHROPIC_API_KEY"):
-                raise HTTPException(status_code=503,
-                                    detail="ANTHROPIC_API_KEY required for transform mode")
-            result = generate_preview_erase_then_inpaint(
-                selfie_path=saved_path, style_id=style_id, seed=seed,
-            )
-        elif mode == "expert":
-            if not os.getenv("ANTHROPIC_API_KEY"):
-                raise HTTPException(status_code=503,
-                                    detail="ANTHROPIC_API_KEY required for expert mode")
-            result = generate_preview_expert(
-                selfie_path=saved_path, style_id=style_id, seed=seed,
-                validate=bool(os.getenv("ANTHROPIC_API_KEY")), max_retries=1,
-            )
-        elif mode == "auto":
-            result = generate_preview_auto(
-                selfie_path=saved_path, style_id=style_id, seed=seed,
-                validate=bool(os.getenv("ANTHROPIC_API_KEY")), max_retries=1,
-            )
-        elif mode == "manual":
-            result = generate_preview_inpaint(
-                selfie_path=saved_path, style_id=style_id, seed=seed,
-                validate=bool(os.getenv("ANTHROPIC_API_KEY")), max_retries=1,
-            )
-        else:
-            raise HTTPException(status_code=400,
-                                detail=f"Unknown mode: {mode}")
-    except InpaintError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        result = generate_preview(
+            source_path=saved_path,
+            style_id=style_id,
+            customer_profile=profile,
+            seed=seed if seed is not None else 42,
+        )
+    except GenerationError as e:
+        raise HTTPException(status_code=502, detail=str(e))
     return result.to_dict()
 
 

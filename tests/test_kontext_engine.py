@@ -79,3 +79,28 @@ def test_generate_preview_end_to_end(tmp_path, monkeypatch):
     assert result.retries in (0, 1)
     assert result.validator_verdict in ("pass", "fail", "uncertain", "skipped")
     assert result.elapsed_ms > 0
+
+
+@pytest.mark.skipif(
+    not os.getenv("REPLICATE_API_TOKEN"),
+    reason="REPLICATE_API_TOKEN not set; skipping live test",
+)
+def test_generate_route_returns_preview(tmp_path, monkeypatch):
+    """The /generate route accepts no `mode` parameter and returns a
+    PreviewResult dict shape."""
+    from fastapi.testclient import TestClient
+    monkeypatch.setenv("STYLE_STUDIO_UPLOADS_DIR", str(tmp_path))
+    from backend.main import app
+    client = TestClient(app)
+
+    with SOURCE_MAN.open("rb") as f:
+        resp = client.post(
+            "/generate",
+            files={"image": ("man.jpg", f, "image/jpeg")},
+            data={"style_id": "mens_textured_crop", "seed": "42"},
+        )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    for k in ("image_url", "style_id", "validator_verdict", "elapsed_ms"):
+        assert k in body, f"missing key {k} in {body!r}"
+    assert body["style_id"] == "mens_textured_crop"
