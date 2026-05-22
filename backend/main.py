@@ -224,6 +224,40 @@ async def generate(
     return result.to_dict()
 
 
+@app.post("/generate-beard")
+async def generate_beard(
+    image: UploadFile = File(...),
+    beard_style_id: str = Form(...),
+    seed: Optional[int] = Form(42),
+) -> dict:
+    """Generate a beard-only preview using FLUX Kontext.
+
+    Returns PreviewResult.to_dict() shape, same as /generate.
+    """
+    from backend.beard_engine import generate_beard_preview, BeardStyleNotFoundError
+
+    _validate_image_upload(image)
+    saved_path = await _save_upload(image)
+
+    profile = analyze_customer(
+        selfie_path=saved_path,
+        use_vision_lm=bool(os.getenv("ANTHROPIC_API_KEY")),
+    ).to_dict()
+
+    try:
+        result = generate_beard_preview(
+            source_path=saved_path,
+            beard_style_id=beard_style_id,
+            customer_profile=profile,
+            seed=seed if seed is not None else 42,
+        )
+    except BeardStyleNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except GenerationError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return result.to_dict()
+
+
 @app.get("/catalogue")
 def catalogue() -> dict:
     """Return the full style catalogue with reference image URLs filled in."""

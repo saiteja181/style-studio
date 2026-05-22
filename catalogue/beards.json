@@ -1,0 +1,50 @@
+[
+  {
+    "id": "clean_shaven",
+    "name": "Clean shaven",
+    "gender": "male",
+    "prompt_template": "Completely clean-shaven face with smooth skin from jawline to upper lip. No beard, no moustache, no stubble shadow. Skin texture and tone exactly matches the surrounding cheeks and neck. Modern professional clean look",
+    "suits_face": ["oval", "round", "square", "heart", "long", "diamond"],
+    "popularity_boost": 4
+  },
+  {
+    "id": "light_stubble",
+    "name": "Light 5 o'clock stubble",
+    "gender": "male",
+    "prompt_template": "Very short uniform stubble across the jaw, chin, and upper lip - approximately 1-2 millimetres long. Soft shadow effect, no defined lines. Looks like 2-3 days of growth. Modern casual styling",
+    "suits_face": ["oval", "round", "square", "heart", "long", "diamond"],
+    "popularity_boost": 5
+  },
+  {
+    "id": "corporate_short_beard",
+    "name": "Corporate short beard",
+    "gender": "male",
+    "prompt_template": "Short well-groomed beard approximately 5-8 millimetres long, evenly trimmed across the cheeks, chin, and jawline. Sharp clean cheek line above the beard. Connected moustache trimmed to the same length. Professional polished look",
+    "suits_face": ["oval", "round", "square", "heart", "long", "diamond"],
+    "popularity_boost": 5
+  },
+  {
+    "id": "full_beard",
+    "name": "Full beard",
+    "gender": "male",
+    "prompt_template": "Full dense beard covering the entire jawline, cheeks, chin, and connecting to a full moustache. Approximately 2-4 centimetres long. Natural shape following the jaw line. Hair texture matches the customer's natural hair texture and color",
+    "suits_face": ["oval", "long", "diamond"],
+    "popularity_boost": 4
+  },
+  {
+    "id": "goatee",
+    "name": "Goatee with moustache",
+    "gender": "male",
+    "prompt_template": "Compact goatee on the chin only, connecting to a moustache, but NO beard on the cheeks or jawline (cheeks are clean-shaven). Chin patch approximately 1-2 centimetres long, well-trimmed. Distinct sharp edges where it ends",
+    "suits_face": ["round", "square", "heart"],
+    "popularity_boost": 3
+  },
+  {
+    "id": "french_beard",
+    "name": "French beard (chin + moustache)",
+    "gender": "male",
+    "prompt_template": "French beard: trimmed beard ONLY on the chin extending slightly along the jaw, connected to a moustache. NO beard on the upper cheeks. Approximately 1 centimetre long, clean lines, modern Indian styling popular among professionals",
+    "suits_face": ["oval", "round", "square", "heart"],
+    "popularity_boost": 5
+  }
+]

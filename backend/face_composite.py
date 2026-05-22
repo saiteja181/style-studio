@@ -40,12 +40,41 @@ FACE_POLYGON_INDICES = [
     67, 109, 103, 54, 21, 162, 127,
 ]
 
+# Upper-face polygon: covers eyebrows + eyes + nose + upper cheeks but EXCLUDES
+# mouth, jaw, lower cheeks, chin.  Used by beard-preview mode so Kontext can
+# redraw the lower face (beard area) while identity around the eyes is locked.
+# Traverses: right ear -> up the right side -> across the eyebrow ridge ->
+# down the left side to left ear -> across the lower-cheek / philtrum level
+# (dipping to ~y_norm=0.32, well below the nose tip so feathering doesn't
+# bleed into the nose pixel) -> back to right ear.
+# The bottom boundary intentionally extends into the philtrum zone so the
+# nose tip (lm1) sits at least 18 px inside the polygon; with feather_px=18
+# the Gaussian blur does not soften the nose pixel at all.
+UPPER_FACE_POLYGON_INDICES = [
+    # right ear, up right temple to brow line
+    454, 356, 389, 251, 284, 332, 297,
+    # across mid-forehead
+    9,
+    # down the left brow and side to left ear
+    67, 109, 103, 54, 21, 162, 127,
+    # bottom boundary: left outer cheek going DOWN to philtrum level then across
+    58, 215,       # left lower cheek (~y_norm 0.32)
+    92, 165,       # crossing toward nose underside
+    186, 39, 37,   # left philtrum / below-nostril
+    267, 269,      # right philtrum / below-nostril
+    322, 410, 416, # right lower cheek crossing outward
+    288, 367, 365, # right outer cheek ascending
+    361, 323,      # back up to right ear level
+    # closes to 454 (right ear, first vertex)
+]
+
 
 def paste_source_face(
     source_path: Path,
     kontext_output_url_or_path: Union[str, Path],
     output_dir: Path,
     feather_px: int = 18,
+    mode: str = "hair",
 ) -> Path:
     """Composite the customer's face polygon (from MediaPipe) onto a Kontext
     output image.
@@ -57,6 +86,11 @@ def paste_source_face(
         output_dir: where to write the composited PNG.
         feather_px: Gaussian blur radius for the polygon edge, in pixels.
             ~18 gives a soft seam between the source face and the new hair.
+        mode: "hair" (default) preserves the full face polygon (eyes, nose,
+            mouth, cheeks, jaw); the new hairstyle can render freely above
+            the brow line.  "beard" preserves only the upper face (eyes,
+            nose, eyebrows, upper cheeks); the new beard can render freely
+            on the jaw and lower cheeks.
 
     Returns:
         Path to the composited PNG.
@@ -77,7 +111,10 @@ def paste_source_face(
             kontext_rgb, (w, h), interpolation=cv2.INTER_LANCZOS4,
         )
 
-    face_alpha = _build_face_alpha(source_rgb, feather_px=feather_px)
+    polygon = UPPER_FACE_POLYGON_INDICES if mode == "beard" else FACE_POLYGON_INDICES
+    face_alpha = _build_face_alpha(
+        source_rgb, feather_px=feather_px, polygon_indices=polygon,
+    )
     if face_alpha is None:
         logger.warning(
             "face_composite: no face detected in source; returning raw Kontext"
@@ -95,11 +132,13 @@ def paste_source_face(
 
 def _build_face_alpha(
     image_rgb: np.ndarray, feather_px: int,
+    polygon_indices: list = None,
 ) -> Optional[np.ndarray]:
     """Build a feathered alpha mask covering the face polygon.
 
     Returns None if MediaPipe finds no face in the image.
     """
+    polygon_indices = polygon_indices or FACE_POLYGON_INDICES
     h, w = image_rgb.shape[:2]
     with _mp_face_mesh.FaceMesh(
         static_image_mode=True, max_num_faces=1,
@@ -109,11 +148,11 @@ def _build_face_alpha(
     if not result.multi_face_landmarks:
         return None
     landmarks = result.multi_face_landmarks[0].landmark
-    if len(landmarks) <= max(FACE_POLYGON_INDICES):
+    if len(landmarks) <= max(polygon_indices):
         return None
 
     pts = np.array([(lm.x * w, lm.y * h) for lm in landmarks])
-    poly = pts[FACE_POLYGON_INDICES].astype(np.int32)
+    poly = pts[polygon_indices].astype(np.int32)
     poly[:, 0] = np.clip(poly[:, 0], 0, w - 1)
     poly[:, 1] = np.clip(poly[:, 1], 0, h - 1)
 

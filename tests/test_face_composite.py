@@ -104,3 +104,62 @@ def test_no_face_in_source_returns_kontext_unchanged(tmp_path):
     assert out_arr[400, 600, 0] > 180, "expected Kontext red, got something else"
     assert out_arr[400, 600, 1] < 80
     assert out_arr[400, 600, 2] < 80
+
+
+def test_paste_source_face_beard_mode_preserves_upper_face_only(tmp_path):
+    """In beard mode, the polygon must cover eyes + nose + brow (UPPER face),
+    so a synthetic red Kontext output is preserved on the JAW/CHIN region
+    while source pixels are preserved on the EYES.
+
+    This is the contract that lets Kontext change the beard while we lock
+    eye identity."""
+    from backend.face_composite import paste_source_face
+    from pathlib import Path
+    import numpy as np
+    from PIL import Image
+
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
+    SOURCE_MAN = PROJECT_ROOT / "tests" / "selfies" / "test_random_indian_man.jpg"
+
+    kontext_path = tmp_path / "fake_kontext.png"
+    src = Image.open(SOURCE_MAN).convert("RGB")
+    Image.new("RGB", src.size, (220, 30, 30)).save(kontext_path, format="PNG")
+
+    out = paste_source_face(
+        source_path=SOURCE_MAN,
+        kontext_output_url_or_path=kontext_path,
+        output_dir=tmp_path,
+        mode="beard",
+    )
+    assert out.exists()
+
+    src_arr = np.array(Image.open(SOURCE_MAN).convert("RGB"))
+    composed = np.array(Image.open(out).convert("RGB"))
+    assert composed.shape == src_arr.shape
+
+    # Sample at the nose tip (MediaPipe landmark 1) - in beard mode the
+    # upper-face polygon DOES cover the nose, so this pixel should match source.
+    import mediapipe as mp
+    with mp.solutions.face_mesh.FaceMesh(
+        static_image_mode=True, max_num_faces=1,
+        refine_landmarks=True, min_detection_confidence=0.5,
+    ) as fm:
+        result = fm.process(src_arr)
+    landmarks = result.multi_face_landmarks[0].landmark
+    nose = landmarks[1]
+    h, w = src_arr.shape[:2]
+    ny, nx = int(nose.y * h), int(nose.x * w)
+    src_face = src_arr[ny, nx].astype(int)
+    out_face = composed[ny, nx].astype(int)
+    assert int(np.abs(out_face - src_face).max()) < 12, (
+        "nose pixel must come from source (it's inside the upper-face polygon)"
+    )
+
+    # Sample at the chin (landmark 152) - in beard mode chin is OUTSIDE
+    # the upper-face polygon, so this pixel should be the Kontext red.
+    chin = landmarks[152]
+    cy_, cx_ = int(chin.y * h), int(chin.x * w)
+    out_chin = composed[cy_, cx_].astype(int)
+    assert out_chin[0] > 150, (
+        f"chin pixel should be red Kontext fill in beard mode; got {tuple(out_chin)}"
+    )
