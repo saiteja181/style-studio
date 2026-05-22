@@ -1,5 +1,20 @@
 # Test selfie credits
 
+> **TEST FIXTURES ONLY — DO NOT DEPLOY TO CUSTOMERS.**
+>
+> These photos are licensed for engineering acceptance testing only.  Pexels'
+> license permits commercial use of the photo but explicitly does NOT grant
+> model-release rights to depicted subjects.  Showing these specific photos
+> to a paying salon customer (preview screen, marketing material, app
+> screenshots) or including them in any production deployment artefact
+> creates real legal exposure under Indian publicity-rights statutes and
+> equivalents in other jurisdictions.
+>
+> Before any customer-facing ship, replace these fixtures with photographer-
+> contracted release-cleared portraits (₹500-2,000 per shot in India).  Or
+> route the salon's own first-customer real photo through the pipeline once
+> a release form is signed.
+
 The two acceptance fixtures used by `tests/run_acceptance_test.py` were
 sourced under permissive licenses.  This file records attribution so the
 project complies with each source's terms.

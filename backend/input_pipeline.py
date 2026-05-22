@@ -169,14 +169,42 @@ def prepare_upload(
 
 
 def _resize_for_flux(pil: Image.Image) -> Image.Image:
-    w, h = pil.size
+    """Resize source to FLUX-friendly dimensions while PRESERVING aspect ratio.
+
+    Bug fixed here (Opus code review of sub-project 1.5):
+    the previous logic applied `max(MIN_EDGE, int(w * scale))` per-dimension,
+    which silently SQUARED a 500x750 portrait into 768x768 (face stretched
+    ~16% wider than reality).  WhatsApp-compressed selfies from Indian phones
+    routinely arrive at sub-MIN_EDGE dimensions and would hit this.
+
+    Correct flow:
+      1. If short edge is below MIN_EDGE, upscale BOTH dimensions by the
+         same factor so aspect ratio is preserved.
+      2. If long edge exceeds LONG_EDGE_TARGET, downscale BOTH dimensions
+         by the same factor.
+      3. Round each dimension to nearest multiple of DIM_MULTIPLE.
+    """
+    src_w, src_h = pil.size
+    w, h = float(src_w), float(src_h)
+
+    short_edge = min(w, h)
+    if short_edge < MIN_EDGE:
+        scale_up = MIN_EDGE / short_edge
+        w *= scale_up
+        h *= scale_up
+
     long_edge = max(w, h)
-    scale = min(1.0, LONG_EDGE_TARGET / long_edge)
-    new_w = max(MIN_EDGE, int(w * scale))
-    new_h = max(MIN_EDGE, int(h * scale))
-    new_w = ((new_w + DIM_MULTIPLE // 2) // DIM_MULTIPLE) * DIM_MULTIPLE
-    new_h = ((new_h + DIM_MULTIPLE // 2) // DIM_MULTIPLE) * DIM_MULTIPLE
-    if (new_w, new_h) == (w, h):
+    if long_edge > LONG_EDGE_TARGET:
+        scale_down = LONG_EDGE_TARGET / long_edge
+        w *= scale_down
+        h *= scale_down
+
+    new_w = ((int(round(w)) + DIM_MULTIPLE // 2) // DIM_MULTIPLE) * DIM_MULTIPLE
+    new_h = ((int(round(h)) + DIM_MULTIPLE // 2) // DIM_MULTIPLE) * DIM_MULTIPLE
+    new_w = max(DIM_MULTIPLE, new_w)
+    new_h = max(DIM_MULTIPLE, new_h)
+
+    if (new_w, new_h) == (src_w, src_h):
         return pil
     return pil.resize((new_w, new_h), Image.LANCZOS)
 
