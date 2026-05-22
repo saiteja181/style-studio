@@ -8,6 +8,9 @@ import numpy as np
 from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# This file must be a frontal face photo that MediaPipe FaceMesh can detect at
+# min_detection_confidence=0.5.  If you replace the fixture, verify that
+# _find_nose_tip_pixel() succeeds on the new file before committing.
 SOURCE_MAN = PROJECT_ROOT / "tests" / "selfies" / "test_random_indian_man.jpg"
 
 

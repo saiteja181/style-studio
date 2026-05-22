@@ -63,7 +63,8 @@ def paste_source_face(
 
     Raises:
         FileNotFoundError: if source_path is missing.
-        ValueError: if either image fails to decode.
+        PIL.UnidentifiedImageError: if either image fails to decode
+            (subclass of OSError).
     """
     source_rgb = np.array(Image.open(source_path).convert("RGB"))
     kontext_rgb = _load_rgb(kontext_output_url_or_path)
