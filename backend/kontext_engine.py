@@ -36,6 +36,10 @@ class GenerationError(RuntimeError):
     """Raised when the Kontext call cannot produce any image at all."""
 
 
+class StyleNotFoundError(GenerationError):
+    """Raised when style_id is not present in the catalogue."""
+
+
 def _call_kontext(
     source_path: Path,
     prompt: str,
@@ -115,7 +119,7 @@ def generate_preview(
     """
     style = _load_style(style_id)
     if style is None:
-        raise GenerationError(f"Unknown style_id: {style_id}")
+        raise StyleNotFoundError(f"Unknown style: {style_id}")
     ref_path = _resolve_reference_path(style)
 
     from backend.prompt_builder import build_edit_prompt
@@ -157,8 +161,8 @@ def generate_preview(
         else:
             verdict = "skipped"
             break
-        retries = attempt_idx + 1  # one retry consumed when we loop again
 
+    retries = min(attempt_idx, max_retries)
     elapsed_ms = int((time.time() - started) * 1000)
     return PreviewResult(
         image_url=final_image_url,
@@ -179,7 +183,7 @@ def _validate(
         from backend.output_validator import validate_generation
         verdict_dict = validate_generation(
             source_path=source_path, reference_path=reference_path,
-            generated_url=str(composited_path),
+            generated_url=composited_path.as_uri(),
         )
         return verdict_dict.get("verdict", "uncertain")
     except Exception as e:
@@ -187,12 +191,19 @@ def _validate(
         return "uncertain"
 
 
+_CATALOGUE_CACHE: Optional[list[dict]] = None
+
+
 def _load_style(style_id: str) -> Optional[dict]:
-    if not CATALOGUE_PATH.exists():
-        return None
-    with CATALOGUE_PATH.open("r", encoding="utf-8") as f:
-        styles = json.load(f)
-    for s in styles:
+    """Return the catalogue entry for style_id, or None if not found.
+    The full catalogue is parsed once and cached at module scope."""
+    global _CATALOGUE_CACHE
+    if _CATALOGUE_CACHE is None:
+        if not CATALOGUE_PATH.exists():
+            return None
+        with CATALOGUE_PATH.open("r", encoding="utf-8") as f:
+            _CATALOGUE_CACHE = json.load(f)
+    for s in _CATALOGUE_CACHE:
         if s.get("id") == style_id:
             return s
     return None

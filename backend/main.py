@@ -21,7 +21,7 @@ from backend.face_analysis import analyze_face
 from backend.customer_analysis import analyze_customer, AnalysisError
 from backend.style_matcher import recommend_styles
 from backend.input_pipeline import prepare_upload, PreflightError
-from backend.kontext_engine import generate_preview, GenerationError
+from backend.kontext_engine import generate_preview, GenerationError, StyleNotFoundError
 
 load_dotenv()
 
@@ -167,7 +167,7 @@ async def generate_batch(
     ).to_dict()
 
     ids = [s.strip() for s in style_ids.split(",") if s.strip()]
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     def _gen_one(sid: str) -> dict:
         try:
@@ -211,6 +211,8 @@ async def generate(
             customer_profile=profile,
             seed=seed if seed is not None else 42,
         )
+    except StyleNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except GenerationError as e:
         raise HTTPException(status_code=502, detail=str(e))
     return result.to_dict()

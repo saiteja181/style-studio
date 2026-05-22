@@ -104,3 +104,67 @@ def test_generate_route_returns_preview(tmp_path, monkeypatch):
     for k in ("image_url", "style_id", "validator_verdict", "elapsed_ms"):
         assert k in body, f"missing key {k} in {body!r}"
     assert body["style_id"] == "mens_textured_crop"
+
+
+def test_generate_route_returns_404_for_unknown_style(tmp_path, monkeypatch):
+    """Unknown style_id must return 404 (client error), not 502 (server error).
+    This is a $0 test - the catalogue lookup fails before any Replicate call."""
+    monkeypatch.setenv("STYLE_STUDIO_UPLOADS_DIR", str(tmp_path))
+    from fastapi.testclient import TestClient
+    from backend.main import app
+    client = TestClient(app)
+
+    with SOURCE_MAN.open("rb") as f:
+        resp = client.post(
+            "/generate",
+            files={"image": ("man.jpg", f, "image/jpeg")},
+            data={"style_id": "does_not_exist_xyz", "seed": "42"},
+        )
+    assert resp.status_code == 404, (
+        f"expected 404 for unknown style, got {resp.status_code}: {resp.text}"
+    )
+    body = resp.json()
+    assert "Unknown style" in body.get("detail", ""), body
+
+
+def test_retries_counter_capped_at_max_retries(monkeypatch, tmp_path):
+    """When the validator says 'fail' on every attempt, the result's retries
+    field must equal max_retries (not max_retries + 1).  Regression for the
+    off-by-one observed in sub-project 1's final code review."""
+    import backend.kontext_engine as ke
+    import backend.face_composite as fc
+
+    # Force the Anthropic + reference-path branch so the validator runs.
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-for-test")
+    monkeypatch.setenv("STYLE_STUDIO_UPLOADS_DIR", str(tmp_path))
+
+    # Stub out the actual Replicate + composite + validator calls.
+    monkeypatch.setattr(
+        ke, "_call_kontext",
+        lambda source_path, prompt, seed: "https://example.test/fake.png",
+    )
+    fake_png = tmp_path / "fake_output.png"
+    fake_png.write_bytes(b"\x89PNG\r\n\x1a\n")  # minimal PNG header bytes
+    monkeypatch.setattr(
+        fc, "paste_source_face",
+        lambda source_path, kontext_output_url_or_path, output_dir, **kw: fake_png,
+    )
+    monkeypatch.setattr(
+        ke, "_validate",
+        lambda source_path, reference_path, composited_path: "fail",
+    )
+
+    # Pick a real style id that has a reference photo so the validator branch fires.
+    profile = {"hair_color_rgb": (40, 30, 25), "hair_texture": "unknown"}
+    result = ke.generate_preview(
+        source_path=SOURCE_MAN,
+        style_id="mens_pompadour",   # has reference_image_path in catalogue
+        customer_profile=profile,
+        seed=42,
+        max_retries=1,
+    )
+    assert result.retries == 1, (
+        f"expected retries=1 after two failing attempts with max_retries=1, "
+        f"got {result.retries}"
+    )
+    assert result.validator_verdict == "fail"
