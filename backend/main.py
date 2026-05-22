@@ -143,9 +143,13 @@ async def consult(
             "has_reference": bool(ref),
         })
 
+    from backend.skin_palette import recommend_palette
+    palette = recommend_palette(profile.skin_tone_bucket)
+
     return {
         "profile": profile.to_dict(),
         "recommendations": rec_dicts,
+        "palette": palette,
         "uploaded_image_url": f"/uploads/{saved_path.name}",
     }
 
