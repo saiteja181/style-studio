@@ -152,6 +152,17 @@ def prepare_upload(
 
     saved_path = _save_jpeg(pil, target_dir, filename_hint)
 
+    # Head-covering detection (turban / hijab / cap / ghoonghat).  Soft warning
+    # only - the salon staff confirms with the customer before generating.
+    # Skipped when ANTHROPIC_API_KEY is unset; costs ~$0.005 otherwise.
+    try:
+        from backend.head_covering import detect_head_covering
+        hc = detect_head_covering(saved_path)
+        if hc.get("detected") and hc.get("message"):
+            warnings.append(hc["message"])
+    except Exception as e:
+        logger.info("head-covering detection skipped: %s", e)
+
     status = "warn" if warnings else "ok"
     code = "SOFT_FOCUS" if warnings else "OK"
     message = ("Input looks good." if not warnings
