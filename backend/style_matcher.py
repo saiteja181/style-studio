@@ -7,9 +7,10 @@ The rules are codified from standard hairstylist suitability guidance,
 adapted for Indian salon context (most customers: deep-black wavy-to-coarse
 hair, oval/round face dominant, mix of traditional and modern preferences).
 
-Scoring (0-100):
+Scoring (0-115, clamped to 0-100):
   face_shape match (0-40)
   jawline match    (0-20)
+  hairline match   (-8 to 15)
   texture compat   (0-15)
   occasion match   (0-10)
   length compat    (0-10)
@@ -166,6 +167,14 @@ def _score_style(style: dict, profile: CustomerProfile) -> tuple[int, str]:
     if jaw_reason:
         reasons_pro.append(jaw_reason)
 
+    # Hairline match (-8 to +15) with reasoning
+    hairline_score, hairline_reason = _hairline_fit(profile.hairline_shape, style_traits)
+    score += hairline_score
+    if hairline_score < 0:
+        reasons_con.append(hairline_reason)
+    elif hairline_reason:
+        reasons_pro.append(hairline_reason)
+
     # Texture compatibility (0-15)
     style_textures = set(t.lower() for t in style.get("compat_texture", ["any"]))
     customer_compatible = TEXTURE_COMPAT.get(profile.hair_texture, {"any"})
@@ -233,6 +242,61 @@ def _jawline_fit(jawline: str, style_traits: list) -> tuple[int, str]:
     if overlap == 1:
         return 14, rule["good_msg"]
     return 6, ""
+
+
+def _hairline_fit(hairline: str, style_traits: list) -> tuple[int, str]:
+    """Return (score_contribution, optional_reasoning_sentence) for hairline fit.
+
+    Hairlines are particularly important for male customers: an M-shape
+    receding hairline looks best with forward-falling fringes that cover
+    the recession, while pompadours and slick-backs expose it.  A widow's
+    peak frames nicely with side- or centre-parted styles but disappears
+    under a full blunt fringe.
+    """
+    rules = {
+        "rounded": {
+            "good_traits": set(),   # neutral - works with most styles
+            "bad_traits": set(),
+            "good_msg": "",
+            "bad_msg": "",
+        },
+        "m-shape": {
+            "good_traits": {"fringe", "forward", "swept down", "curtain bangs",
+                            "textured", "crop", "korean fringe", "soft"},
+            "bad_traits": {"slick-back", "pompadour", "swept up",
+                           "exposed hairline", "undercut"},
+            "good_msg": "the forward-falling shape masks an M-shape recession naturally",
+            "bad_msg": "this style exposes the hairline; an M-shape recession would be visible",
+        },
+        "widows-peak": {
+            "good_traits": {"side-part", "center-part", "swept", "frame", "soft",
+                            "layered", "side-swept"},
+            "bad_traits": {"blunt fringe", "full fringe", "closed forehead",
+                           "blunt-fringe-across-forehead"},
+            "good_msg": "the parting frames your widow's peak instead of hiding it",
+            "bad_msg": "a blunt fringe flattens the widow's peak's natural character",
+        },
+        "square": {
+            "good_traits": {"soft", "layered", "side-swept", "fringe", "wavy",
+                            "textured"},
+            "bad_traits": {"harsh", "geometric", "blunt-fringe-across-forehead"},
+            "good_msg": "soft layers complement your square hairline without harsh contrast",
+            "bad_msg": "a geometric shape exaggerates the square hairline",
+        },
+    }
+    rule = rules.get((hairline or "").lower())
+    if rule is None:
+        # Unknown / unspecified hairline -> neutral midpoint
+        return 8, ""
+    # If any "bad" trait overlaps, surface as caveat
+    if any(t in rule["bad_traits"] for t in style_traits):
+        return -8, rule["bad_msg"]
+    overlap = sum(1 for t in style_traits if t in rule["good_traits"])
+    if overlap >= 2:
+        return 15, rule["good_msg"]
+    if overlap == 1:
+        return 10, rule["good_msg"]
+    return 5, ""   # neutral, no message
 
 
 def _compose_reasoning(style_name: str, pros: list, cons: list,
