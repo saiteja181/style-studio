@@ -47,3 +47,35 @@ def test_preview_result_dataclass_has_required_fields():
     for k in ("image_url", "style_id", "style_name", "prompt", "seed",
               "validator_verdict", "retries", "elapsed_ms"):
         assert k in d
+
+
+@pytest.mark.skipif(
+    not os.getenv("REPLICATE_API_TOKEN"),
+    reason="REPLICATE_API_TOKEN not set; skipping live test",
+)
+def test_generate_preview_end_to_end(tmp_path, monkeypatch):
+    """Live end-to-end on the Indian-male source + textured_crop style.
+    Cost: ~$0.04 (Kontext) + ~$0.006 (validator, if Anthropic configured)."""
+    from backend.kontext_engine import generate_preview, PreviewResult
+    from backend.customer_analysis import analyze_customer
+
+    # Use a private uploads dir so the test doesn't pollute /uploads/.
+    monkeypatch.setenv("STYLE_STUDIO_UPLOADS_DIR", str(tmp_path))
+
+    profile = analyze_customer(
+        selfie_path=SOURCE_MAN, use_vision_lm=False,
+    ).to_dict()
+
+    result = generate_preview(
+        source_path=SOURCE_MAN,
+        style_id="mens_textured_crop",
+        customer_profile=profile,
+        seed=42,
+        max_retries=1,
+    )
+    assert isinstance(result, PreviewResult)
+    assert result.image_url.startswith(("/uploads/", "http"))
+    assert result.style_id == "mens_textured_crop"
+    assert result.retries in (0, 1)
+    assert result.validator_verdict in ("pass", "fail", "uncertain", "skipped")
+    assert result.elapsed_ms > 0

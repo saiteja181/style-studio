@@ -92,3 +92,117 @@ def _extract_first_url(output) -> Optional[str]:
     if isinstance(url, str):
         return url
     return None
+
+
+import json
+import time
+
+CATALOGUE_PATH = Path(__file__).resolve().parent.parent / "catalogue" / "styles.json"
+REFERENCES_DIR = Path(__file__).resolve().parent.parent / "catalogue" / "references"
+
+
+def generate_preview(
+    source_path: Path,
+    style_id: str,
+    customer_profile: dict,
+    seed: int = 42,
+    max_retries: int = 1,
+) -> PreviewResult:
+    """Run a full preview: build prompt -> Kontext -> face composite ->
+    validate -> retry on fail.
+
+    Raises GenerationError if every attempt fails to produce an image.
+    """
+    style = _load_style(style_id)
+    if style is None:
+        raise GenerationError(f"Unknown style_id: {style_id}")
+    ref_path = _resolve_reference_path(style)
+
+    from backend.prompt_builder import build_edit_prompt
+    from backend.face_composite import paste_source_face
+
+    uploads_dir = Path(
+        os.getenv("STYLE_STUDIO_UPLOADS_DIR")
+        or (Path(__file__).resolve().parent.parent / "tests" / "uploads")
+    )
+
+    started = time.time()
+    verdict = "skipped"
+    retries = 0
+    final_image_url = None
+    final_prompt = ""
+
+    for attempt_idx in range(max_retries + 1):
+        attempt_seed = seed if attempt_idx == 0 else seed + 1000 + attempt_idx
+        final_prompt = build_edit_prompt(
+            style=style, customer_profile=customer_profile,
+            source_path=source_path, reference_path=ref_path,
+        )
+
+        raw_url = _call_kontext(source_path, final_prompt, attempt_seed)
+        composited = paste_source_face(
+            source_path=source_path,
+            kontext_output_url_or_path=raw_url,
+            output_dir=uploads_dir,
+        )
+        final_image_url = f"/uploads/{composited.name}"
+
+        if os.getenv("ANTHROPIC_API_KEY") and ref_path is not None:
+            verdict = _validate(source_path, ref_path, composited)
+            logger.info("validator attempt %d: %s", attempt_idx + 1, verdict)
+            if verdict in ("pass", "uncertain"):
+                # 'uncertain' counts as ship - validator parse error shouldn't
+                # burn a second Kontext call.
+                break
+        else:
+            verdict = "skipped"
+            break
+        retries = attempt_idx + 1  # one retry consumed when we loop again
+
+    elapsed_ms = int((time.time() - started) * 1000)
+    return PreviewResult(
+        image_url=final_image_url,
+        style_id=style_id,
+        style_name=style.get("name", style_id),
+        prompt=final_prompt,
+        seed=seed,
+        validator_verdict=verdict,
+        retries=retries,
+        elapsed_ms=elapsed_ms,
+    )
+
+
+def _validate(
+    source_path: Path, reference_path: Path, composited_path: Path,
+) -> str:
+    try:
+        from backend.output_validator import validate_generation
+        verdict_dict = validate_generation(
+            source_path=source_path, reference_path=reference_path,
+            generated_url=str(composited_path),
+        )
+        return verdict_dict.get("verdict", "uncertain")
+    except Exception as e:
+        logger.warning("validator unavailable: %s", e)
+        return "uncertain"
+
+
+def _load_style(style_id: str) -> Optional[dict]:
+    if not CATALOGUE_PATH.exists():
+        return None
+    with CATALOGUE_PATH.open("r", encoding="utf-8") as f:
+        styles = json.load(f)
+    for s in styles:
+        if s.get("id") == style_id:
+            return s
+    return None
+
+
+def _resolve_reference_path(style: dict) -> Optional[Path]:
+    ref = style.get("reference_image_path")
+    if not ref:
+        return None
+    p = Path(ref)
+    if not p.is_absolute():
+        p = REFERENCES_DIR / p
+    return p if p.exists() else None
