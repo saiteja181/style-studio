@@ -58,3 +58,25 @@ def test_texture_contrast_quiet_when_unknown():
     style = {"compat_texture": ["straight"], "style_traits": ["straight"]}
     profile = {"hair_texture": "unknown"}
     assert _texture_contrast_clause(style, profile) == ""
+
+
+def test_build_edit_prompt_includes_imperative_clause():
+    """The output of build_edit_prompt must contain the imperative clause that
+    pushes Kontext to commit to a real hair change instead of editing
+    conservatively.  This was the lever that unblocked men's style
+    differentiation in sub-project 1.5."""
+    from backend.prompt_builder import build_edit_prompt
+    from pathlib import Path
+
+    style = {"name": "Test Cut", "prompt_template": "a short crop"}
+    profile = {"hair_color_rgb": (40, 30, 25), "hair_texture": "unknown"}
+    out = build_edit_prompt(
+        style=style, customer_profile=profile,
+        source_path=Path("/tmp/nope.jpg"),  # not opened; expert_consult skipped
+        reference_path=None,
+    )
+    assert "visibly different from the source" in out, (
+        f"missing imperative clause; got: {out!r}"
+    )
+    assert "Keep the face" in out, "identity-preservation clause must remain"
+    assert "Change ONLY the hairstyle to:" in out, "Kontext wrapper must remain"

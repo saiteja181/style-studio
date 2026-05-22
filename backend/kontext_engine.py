@@ -68,7 +68,7 @@ def _call_kontext(
                     "aspect_ratio": "match_input_image",
                     "output_format": "png",
                     "safety_tolerance": safety_tolerance,
-                    "prompt_upsampling": False,
+                    "prompt_upsampling": True,
                     "seed": seed,
                 },
             )

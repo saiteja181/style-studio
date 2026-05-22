@@ -46,6 +46,9 @@ def build_edit_prompt(
     texture = _texture_contrast_clause(style, customer_profile)
     return (
         f"Change ONLY the hairstyle to: {base}.{colour}{texture} "
+        "This is a complete hairstyle change. The new hair must look "
+        "visibly different from the source hair in shape, length, or styling "
+        "- do not preserve the original silhouette. "
         "Keep the face, eyes, expression, beard, eyebrows, glasses, "
         "clothing, hands, and background exactly identical to the original "
         "photo - do not change anything below the eyebrows. Photoreal, same "

@@ -212,7 +212,8 @@
     "maintenance": "low",
     "popularity_boost": 5,
     "quality_tier": "limited",
-    "style_traits": ["braid", "long", "traditional", "neat", "structured"]
+    "style_traits": ["braid", "long", "traditional", "neat", "structured"],
+    "prompt_template": "A classic long Indian braid (chotti): hair pulled back tightly from the forehead with a centre or side parting, gathered at the nape, then plaited into a single thick braid hanging down past the shoulders, near waist length. The braid is neat, structured, traditional. Hairline visible and clean. Often worn for daily traditional wear, festive occasions, or with a small flower garland (gajra) tucked into the braid"
   },
   {
     "id": "modern_chin_bob",
@@ -258,7 +259,8 @@
     "maintenance": "high",
     "popularity_boost": 5,
     "quality_tier": "limited",
-    "style_traits": ["updo", "bun", "bridal", "traditional", "elegant", "structured"]
+    "style_traits": ["updo", "bun", "bridal", "traditional", "elegant", "structured"],
+    "prompt_template": "A traditional Indian bridal bun (juda): hair pulled back from the forehead, gathered up high at the crown of the head, and wound into a large structured bun decorated with flowers, hairpins, or ornaments. Sometimes a long covering veil drapes from the bun. Often paired with maang tikka jewellery on the centre parting. Heavy, formal, elegant, occupies significant volume above and behind the head"
   },
   {
     "id": "curtain_bangs_medium",
@@ -274,6 +276,7 @@
     "maintenance": "medium",
     "popularity_boost": 5,
     "quality_tier": "high",
-    "style_traits": ["fringe", "curtain bangs", "soft", "side-swept", "modern"]
+    "style_traits": ["fringe", "curtain bangs", "soft", "side-swept", "modern"],
+    "prompt_template": "Medium-length hair with modern curtain bangs: hair falls to shoulder length, with face-framing curtain bangs parted in the centre and sweeping outward to either side of the face, longest near the cheekbones and gradually blending into the rest of the hair. Soft, modern, feminine styling. The forehead is partly visible through the parted bangs, not fully covered"
   }
 ]

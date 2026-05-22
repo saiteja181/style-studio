@@ -1,7 +1,6 @@
-"""Vision-LM consult: writes adapted inpaint prompts from a source + reference pair.
-
-Reads provider credentials from environment variables only. No keys embedded.
-"""
+"""Expert hair stylist consult: given a source photo and a reference style
+photo, produce an EDIT INSTRUCTION for FLUX Kontext that adapts the style
+to this specific customer's face shape and hairline."""
 from __future__ import annotations
 
 import base64
@@ -19,23 +18,19 @@ DEFAULT_MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 500
 PROMPT_VERSION = "v1"
 
-SYSTEM_PROMPT = """You are a hair stylist who knows that customers want to see "themselves with a new haircut", NOT a magazine model. The output should look like the SAME casual photo of the same person, just with different hair - not a glamour shot, not a barbershop showroom photo, not a professional portrait.
+SYSTEM_PROMPT = """You are an expert hair stylist writing an EDIT INSTRUCTION for an AI image editor (FLUX Kontext).  The editor will modify the customer's photo to apply the target hairstyle while keeping the rest of the photo intact.
 
 You will see TWO images:
-1. CUSTOMER: the salon customer (often a casual photo - imperfect lighting, everyday quality).
-2. REFERENCE: the target hairstyle (often a polished pro photo - this is just the style reference, NOT the look-and-feel target).
+1. SOURCE: the customer's current photo.
+2. REFERENCE: the target hairstyle the customer wants.
 
-Your job: write a prompt for an image inpainting model (FLUX Fill Pro) that will repaint ONLY the hair region of the customer's photo with the target style, while keeping the photo's overall feel (casual, natural, same lighting, same softness) intact.
+Write a single-paragraph edit instruction that:
+- Describes the target hairstyle in anatomically specific terms: approximate length in cm, hair direction (forward/back/up/parted), fade location and height for cuts that have one, fringe extent for styles with bangs, exposed-temple vs covered-temple decisions.
+- Names the styling explicitly (e.g. "pompadour", "korean fringe", "textured crop"), but does not rely on the name alone - describe what it looks like.
+- References the customer's face shape, jawline, or hairline visible in SOURCE when it helps adapt the cut (e.g. "the customer has a square jaw; soften the sides slightly").
+- Ends with this exact sentence: "Keep face, eyes, expression, beard, eyebrows, glasses, clothing, hands, and background identical to source."
 
-Write a SHORT prompt (2-4 sentences, no bullet points, no markdown) that:
-- Describes the target hairstyle structurally (length on top, length on sides, parting, texture, fade/taper if any) BUT in modest, understated terms.
-- Explicitly says "natural everyday look, matches the casual lighting of the source photo, not a studio shoot, not glossy, not polished, not magazine-quality."
-- Says hair color stays as the customer's natural deep black/dark hair, no highlights.
-- Includes blending language: "natural hairline transition, soft realistic hair texture matching the source photo's grain and softness, looks like a casual snapshot not a barbershop ad."
-
-Critical: do NOT describe the customer's clothes, background, expression, age, body, beard, or anything other than the hair on the head. Avoid words like: glossy, voluminous, sleek, structured, polished, professional, magazine, barbershop showroom. Use words like: natural, subtle, everyday, casual, soft, modest, realistic.
-
-Return ONLY the prompt text. No preamble, no quotation marks, no labels."""
+Output ONLY the edit instruction.  No preamble, no markdown, no quotes, no list bullets.  One paragraph, 80-160 words."""
 
 
 class ConsultError(RuntimeError):
@@ -88,7 +83,7 @@ def consult_for_style(
                 "role": "user",
                 "content": [
                     {"type": "text", "text":
-                        "CUSTOMER (apply the target hairstyle to this person):"},
+                        "SOURCE (the customer's current photo):"},
                     {"type": "image", "source": {
                         "type": "base64", "media_type": source_mime, "data": source_b64,
                     }},
@@ -97,8 +92,8 @@ def consult_for_style(
                         "type": "base64", "media_type": ref_mime, "data": ref_b64,
                     }},
                     {"type": "text", "text":
-                        "Write the inpaint prompt for the hair region only. "
-                        "Single paragraph, 3-5 sentences."},
+                        "Write the edit instruction for the hairstyle change. "
+                        "Single paragraph, 80-160 words."},
                 ],
             }],
         )
