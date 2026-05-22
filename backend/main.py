@@ -22,6 +22,7 @@ from backend.customer_analysis import analyze_customer, AnalysisError
 from backend.style_matcher import recommend_styles
 from backend.input_pipeline import prepare_upload, PreflightError
 from backend.kontext_engine import generate_preview, GenerationError, StyleNotFoundError
+from backend.retention import lifespan_with_sweeper
 
 load_dotenv()
 
@@ -40,8 +41,9 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title="Style Studio API",
-    version="0.3.0",
+    version="0.3.1",
     description="Indian hairstyle consultation + preview generation for salons.",
+    lifespan=lambda app: lifespan_with_sweeper(UPLOADS_DIR, app),
 )
 
 app.add_middleware(
