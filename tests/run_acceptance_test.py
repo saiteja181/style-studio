@@ -36,11 +36,11 @@ OUT = PROJECT_ROOT / "tests" / "acceptance"
 SELFIES = PROJECT_ROOT / "tests" / "selfies"
 
 CASES = [
-    ("man",   SELFIES / "test_random_indian_man.jpg",
-     "Indian man",
+    ("man",   SELFIES / "young_indian_man.jpg",
+     "Young Indian man",
      ["mens_pompadour", "mens_korean_fringe", "mens_textured_crop"]),
-    ("woman", SELFIES / "test_indian_woman_b.jpg",
-     "Indian woman (grey hair, hard case)",
+    ("woman", SELFIES / "young_indian_woman.jpg",
+     "Young Indian woman",
      ["indian_braid_long", "bridal_juda", "curtain_bangs_medium"]),
 ]
 
