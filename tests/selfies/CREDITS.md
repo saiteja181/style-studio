@@ -31,6 +31,25 @@ project complies with each source's terms.
 - License: Pexels free-to-use (commercial and non-commercial; attribution appreciated, not required)
 - Downloaded: 2026-05-23
 
+## round_face_indian_man.jpg
+- Source: https://www.pexels.com/photo/portrait-photography-of-man-smiling-2324638/
+- Photographer: Yogendra Singh (https://pexels.com/@yogendras31/)
+- License: Pexels free-to-use (commercial and non-commercial; attribution appreciated, not required)
+- Downloaded: 2026-05-23
+
+## curly_hair_indian_woman.jpg
+- Source: https://www.pexels.com/photo/portrait-of-a-fashionable-woman-with-long-hair-31541803/
+- Photographer: Anil Sharma (https://pexels.com/@shootsaga/)
+- License: Pexels free-to-use (commercial and non-commercial; attribution appreciated, not required)
+- Downloaded: 2026-05-23
+
+## dark_skin_indian_man.jpg
+- Source: https://www.pexels.com/photo/a-man-in-blue-and-gray-plaid-shirt-7529112/
+- Photographer: T K Dhamu (https://www.pexels.com/@tkdhamu/)
+- License: Pexels free-to-use (commercial and non-commercial; attribution appreciated, not required)
+- Downloaded: 2026-05-23
+- Note: not in current acceptance CASES; reserved for future demographic-coverage run.
+
 ## Legacy fixtures
 - `test_random_indian_man.jpg` (watermarked, no longer acceptance gate)
 - `test_indian_woman_a.jpg` (tight portrait, blocked by pre-flight)
