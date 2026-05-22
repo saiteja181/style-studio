@@ -51,9 +51,14 @@ SKIN_SAMPLE_INDICES = [
 # width is a reasonable default; we cap it so a tight crop doesn't sample
 # pixels that have already been heavily edited.
 RING_PX = 24
-# Per-channel shift cap so a freak outlier (e.g. a stray bright pixel in
-# the ring) can't tint the whole hair.
-MAX_SHIFT_PER_CHANNEL = 18.0
+# L-channel shift cap.  We only shift LUMINANCE (ambient lighting); chroma
+# stays put so the hair keeps its own colour instead of being pulled toward
+# skin tone.  Cap is tight on purpose - bigger shifts are usually FLUX hair
+# colour being right but disagreeing with our skin sample, which we shouldn't
+# "correct".
+MAX_L_SHIFT = 8.0
+# Below this absolute shift the change is invisible; skip the work.
+MIN_L_SHIFT = 0.6
 
 
 def harmonise_with_source(
@@ -126,24 +131,35 @@ def _lab_shift(
     source_rgb: np.ndarray,
     generated_rgb: np.ndarray,
     inside_ring: np.ndarray,
-    outside_ring: np.ndarray,
+    src_skin_or_outside: np.ndarray,
 ) -> np.ndarray:
-    """Shift the generated image's LAB so its boundary matches the source's."""
+    """Shift only the L channel of the generated image so ambient brightness
+    matches the source.  Hair colour (chroma a, b) is left alone - it's
+    intrinsic to the style/customer and pulling it toward skin tone produces
+    the "reddish hair" tint we observed on Indian male sources.
+    """
     src_lab = cv2.cvtColor(source_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
     gen_lab = cv2.cvtColor(generated_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
 
-    src_mean = _ring_mean(src_lab, outside_ring)
-    gen_mean = _ring_mean(gen_lab, inside_ring)
-    shift = src_mean - gen_mean
-    shift = np.clip(shift, -MAX_SHIFT_PER_CHANNEL, MAX_SHIFT_PER_CHANNEL)
-    logger.info("colour_match: LAB shift L=%.2f a=%.2f b=%.2f",
-                float(shift[0]), float(shift[1]), float(shift[2]))
+    src_L_mean = _channel_mean(src_lab[..., 0], src_skin_or_outside)
+    gen_L_mean = _channel_mean(gen_lab[..., 0], inside_ring)
+    delta_L = float(np.clip(src_L_mean - gen_L_mean, -MAX_L_SHIFT, MAX_L_SHIFT))
 
-    out_lab = gen_lab + shift.reshape(1, 1, 3)
-    out_lab[..., 0] = np.clip(out_lab[..., 0], 0, 255)
-    out_lab[..., 1] = np.clip(out_lab[..., 1], 0, 255)
-    out_lab[..., 2] = np.clip(out_lab[..., 2], 0, 255)
+    if abs(delta_L) < MIN_L_SHIFT:
+        logger.info("colour_match: L shift %.2f below threshold, skipping", delta_L)
+        return generated_rgb
+
+    logger.info("colour_match: L-only shift dL=%.2f", delta_L)
+    out_lab = gen_lab.copy()
+    out_lab[..., 0] = np.clip(out_lab[..., 0] + delta_L, 0, 255)
     return cv2.cvtColor(out_lab.astype(np.uint8), cv2.COLOR_LAB2RGB)
+
+
+def _channel_mean(channel: np.ndarray, mask: np.ndarray) -> float:
+    sel = mask > 0
+    if not sel.any():
+        return 0.0
+    return float(channel[sel].mean())
 
 
 def _ring_mean(lab_img: np.ndarray, ring_mask: np.ndarray) -> np.ndarray:
