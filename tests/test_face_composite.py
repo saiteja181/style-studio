@@ -76,3 +76,31 @@ def test_paste_source_face_preserves_face_replaces_background(tmp_path):
     assert out_corner[0] > 180 and out_corner[1] < 80 and out_corner[2] < 80, (
         f"top-left corner = {tuple(out_corner)}, expected red Kontext pixel"
     )
+
+
+def test_no_face_in_source_returns_kontext_unchanged(tmp_path):
+    """If MediaPipe can't find a face in the source, the function must NOT
+    crash - it should ship the Kontext output as-is.  Tests defence-in-depth
+    against unusual inputs that slipped past pre-flight."""
+    from backend.face_composite import paste_source_face
+
+    # Source with no face: solid grey.  Same dims as the man photo so we
+    # don't accidentally exercise the resize path here.
+    src_arr = np.full((800, 1216, 3), 128, dtype=np.uint8)
+    blank_src = tmp_path / "blank.jpg"
+    Image.fromarray(src_arr).save(blank_src, format="JPEG", quality=92)
+
+    kontext = tmp_path / "kontext.png"
+    Image.new("RGB", (1216, 800), (220, 30, 30)).save(kontext, format="PNG")
+
+    out = paste_source_face(
+        source_path=blank_src,
+        kontext_output_url_or_path=kontext,
+        output_dir=tmp_path,
+    )
+    out_arr = np.array(Image.open(out).convert("RGB"))
+    # Should be the Kontext red, not the grey source - because we fell back
+    # to shipping Kontext when face detection failed.
+    assert out_arr[400, 600, 0] > 180, "expected Kontext red, got something else"
+    assert out_arr[400, 600, 1] < 80
+    assert out_arr[400, 600, 2] < 80
