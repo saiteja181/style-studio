@@ -163,3 +163,122 @@ def test_paste_source_face_beard_mode_preserves_upper_face_only(tmp_path):
     assert out_chin[0] > 150, (
         f"chin pixel should be red Kontext fill in beard mode; got {tuple(out_chin)}"
     )
+
+
+def test_paste_source_face_skin_only_excludes_turban_pixels(tmp_path):
+    """When the source has a black turban whose fabric falls inside the
+    geometric face polygon (Sikh / hijab case), the skin-only filter must
+    EXCLUDE those non-skin pixels so they don't bleed back through the
+    composite onto the Kontext output.
+
+    Regression for the dark-strand-crossing-face bug visible in SP 8's
+    acceptance grid on the young_indian_man.jpg source."""
+    from backend.face_composite import paste_source_face
+    from pathlib import Path
+    import numpy as np
+    from PIL import Image
+
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
+    sikh_src = PROJECT_ROOT / "tests" / "selfies" / "young_indian_man.jpg"
+    assert sikh_src.exists(), "missing test fixture"
+
+    # Kontext output: bright cyan everywhere.  After composite, the turban
+    # region (inside the geometric polygon, outside the skin colour range)
+    # must remain cyan - proving the skin-only filter excluded it.
+    kontext_path = tmp_path / "fake_kontext.png"
+    src = Image.open(sikh_src).convert("RGB")
+    Image.new("RGB", src.size, (40, 200, 220)).save(kontext_path, format="PNG")
+
+    out = paste_source_face(
+        source_path=sikh_src,
+        kontext_output_url_or_path=kontext_path,
+        output_dir=tmp_path,
+        head_covering_type="turban",
+    )
+    composed = np.array(Image.open(out).convert("RGB"))
+    src_arr = np.array(Image.open(sikh_src).convert("RGB"))
+
+    # Sample a point in the turban region (above the eyebrows, on the
+    # forehead-side fabric).  In the source this is BLACK; the test passes
+    # if the composite kept the CYAN Kontext output there (because the
+    # skin-only filter excluded the source's turban black).
+    # Find a turban pixel via colour: scan the top quarter of the image
+    # for the darkest patch and use its centre.
+    h, w = src_arr.shape[:2]
+    top_quarter = src_arr[: h // 4, :]
+    luminance = top_quarter.astype(np.int32).sum(axis=2)
+    dark_y, dark_x = np.unravel_index(luminance.argmin(), luminance.shape)
+    # Make sure we picked a turban pixel (very dark) not skin:
+    assert luminance[dark_y, dark_x] < 100, "fixture's turban region not where expected"
+
+    # Source colour at that pixel is dark fabric:
+    src_pixel = src_arr[dark_y, dark_x].astype(int)
+    assert src_pixel.sum() < 60, f"expected dark fabric, got {tuple(src_pixel)}"
+
+    # Composited colour at that pixel must be the CYAN Kontext fill,
+    # NOT the source fabric:
+    out_pixel = composed[dark_y, dark_x].astype(int)
+    assert out_pixel[1] > 150 and out_pixel[2] > 150, (
+        f"turban-region pixel was pasted from source instead of Kontext; "
+        f"got {tuple(out_pixel)} but expected cyan (Kontext fill). "
+        f"Skin-only filter or head_covering shrink did not work."
+    )
+
+
+def test_paste_source_face_skin_only_preserves_actual_skin(tmp_path):
+    """The skin-only filter must NOT drop legitimate skin pixels.  When the
+    Kontext output is wildly different in colour from the source, the
+    customer's cheek pixels must still come from source.
+
+    This is the inverse of the turban test - confirms we don't accidentally
+    over-filter and lose face identity."""
+    from backend.face_composite import paste_source_face
+    from pathlib import Path
+    import mediapipe as mp
+    import numpy as np
+    from PIL import Image
+
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
+    # Use the young Indian woman source (no head covering, clear face)
+    woman_src = PROJECT_ROOT / "tests" / "selfies" / "young_indian_woman.jpg"
+    assert woman_src.exists()
+
+    kontext_path = tmp_path / "fake_kontext.png"
+    src = Image.open(woman_src).convert("RGB")
+    Image.new("RGB", src.size, (255, 0, 255)).save(kontext_path, format="PNG")  # magenta
+
+    out = paste_source_face(
+        source_path=woman_src,
+        kontext_output_url_or_path=kontext_path,
+        output_dir=tmp_path,
+    )
+    composed = np.array(Image.open(out).convert("RGB"))
+    src_arr = np.array(Image.open(woman_src).convert("RGB"))
+
+    # Sample at the nose tip - guaranteed inside the face polygon AND skin
+    h, w = src_arr.shape[:2]
+    with mp.solutions.face_mesh.FaceMesh(
+        static_image_mode=True, max_num_faces=1,
+        refine_landmarks=True, min_detection_confidence=0.5,
+    ) as fm:
+        result = fm.process(src_arr)
+    nose = result.multi_face_landmarks[0].landmark[1]
+    ny, nx = int(nose.y * h), int(nose.x * w)
+    src_skin = src_arr[ny, nx].astype(int)
+    out_skin = composed[ny, nx].astype(int)
+    diff = int(np.abs(out_skin - src_skin).max())
+    assert diff < 12, (
+        f"nose-tip skin pixel drifted from source by {diff}; "
+        f"the skin-only filter or composite over-rejected legitimate skin"
+    )
+
+
+def test_paste_source_face_accepts_head_covering_type_parameter():
+    """The function signature must accept head_covering_type as an optional
+    parameter.  Pure interface check - no Kontext call required."""
+    from backend.face_composite import paste_source_face
+    import inspect
+    sig = inspect.signature(paste_source_face)
+    assert "head_covering_type" in sig.parameters
+    param = sig.parameters["head_covering_type"]
+    assert param.default is None

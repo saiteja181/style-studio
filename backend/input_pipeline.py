@@ -48,6 +48,11 @@ MIN_BLUR_SCORE = 60.0        # Laplacian variance; <60 is camera-shake or oof
 _mp_face_detection = mp.solutions.face_detection
 
 
+def _default_head_covering() -> dict:
+    return {"detected": False, "covering_type": "none",
+            "confidence": "none", "message": ""}
+
+
 @dataclass
 class PreflightReport:
     status: str                   # "ok" | "warn" | "block"
@@ -58,6 +63,7 @@ class PreflightReport:
     original_size: tuple = ()     # (w, h) as uploaded
     normalised_size: tuple = ()   # (w, h) after EXIF + resize
     warnings: list = field(default_factory=list)
+    head_covering: dict = field(default_factory=_default_head_covering)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -155,11 +161,14 @@ def prepare_upload(
     # Head-covering detection (turban / hijab / cap / ghoonghat).  Soft warning
     # only - the salon staff confirms with the customer before generating.
     # Skipped when ANTHROPIC_API_KEY is unset; costs ~$0.005 otherwise.
+    hc_result = _default_head_covering()
     try:
         from backend.head_covering import detect_head_covering
         hc = detect_head_covering(saved_path)
-        if hc.get("detected") and hc.get("message"):
-            warnings.append(hc["message"])
+        if isinstance(hc, dict):
+            hc_result = hc
+            if hc.get("detected") and hc.get("message"):
+                warnings.append(hc["message"])
     except Exception as e:
         logger.info("head-covering detection skipped: %s", e)
 
@@ -173,6 +182,7 @@ def prepare_upload(
         face_fraction=face_fraction, blur_score=blur_score,
         original_size=original_size, normalised_size=normalised_size,
         warnings=warnings,
+        head_covering=hc_result,
     )
     logger.info("preflight: %s face=%.2f blur=%.0f size=%s",
                 code, face_fraction, blur_score, normalised_size)

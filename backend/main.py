@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from backend.face_analysis import analyze_face
 from backend.customer_analysis import analyze_customer, AnalysisError
 from backend.style_matcher import recommend_styles
-from backend.input_pipeline import prepare_upload, PreflightError
+from backend.input_pipeline import prepare_upload, PreflightError, PreflightReport
 from backend.kontext_engine import generate_preview, GenerationError, StyleNotFoundError
 from backend.retention import lifespan_with_sweeper
 
@@ -108,7 +108,7 @@ async def consult(
     """
     _validate_image_upload(image)
 
-    saved_path = await _save_upload(image)
+    saved_path, report = await _save_upload(image)
 
     try:
         profile = analyze_customer(
@@ -165,7 +165,11 @@ async def generate_batch(
     """
     import asyncio
     _validate_image_upload(image)
-    saved_path = await _save_upload(image)
+    saved_path, report = await _save_upload(image)
+    head_covering_type = (
+        report.head_covering.get("covering_type")
+        if report.head_covering.get("detected") else None
+    )
 
     profile = analyze_customer(
         selfie_path=saved_path,
@@ -180,6 +184,7 @@ async def generate_batch(
             r = generate_preview(
                 source_path=saved_path, style_id=sid,
                 customer_profile=profile, seed=seed if seed is not None else 42,
+                head_covering_type=head_covering_type,
             )
             return r.to_dict()
         except Exception as e:
@@ -203,7 +208,11 @@ async def generate(
     Returns PreviewResult.to_dict() shape (see backend.kontext_engine).
     """
     _validate_image_upload(image)
-    saved_path = await _save_upload(image)
+    saved_path, report = await _save_upload(image)
+    head_covering_type = (
+        report.head_covering.get("covering_type")
+        if report.head_covering.get("detected") else None
+    )
 
     profile = analyze_customer(
         selfie_path=saved_path,
@@ -216,6 +225,7 @@ async def generate(
             style_id=style_id,
             customer_profile=profile,
             seed=seed if seed is not None else 42,
+            head_covering_type=head_covering_type,
         )
     except StyleNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -237,7 +247,11 @@ async def generate_beard(
     from backend.beard_engine import generate_beard_preview, BeardStyleNotFoundError
 
     _validate_image_upload(image)
-    saved_path = await _save_upload(image)
+    saved_path, report = await _save_upload(image)
+    head_covering_type = (
+        report.head_covering.get("covering_type")
+        if report.head_covering.get("detected") else None
+    )
 
     profile = analyze_customer(
         selfie_path=saved_path,
@@ -250,6 +264,7 @@ async def generate_beard(
             beard_style_id=beard_style_id,
             customer_profile=profile,
             seed=seed if seed is not None else 42,
+            head_covering_type=head_covering_type,
         )
     except BeardStyleNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -310,10 +325,15 @@ def _validate_image_upload(image: UploadFile) -> None:
         )
 
 
-async def _save_upload(image: UploadFile) -> Path:
+async def _save_upload(image: UploadFile) -> tuple[Path, PreflightReport]:
     """Normalise an upload (EXIF transpose + resize + face pre-flight) and
-    return the path of the cleaned JPEG.  Raises HTTPException 422 if the
-    photo is unusable so staff can retake before we spend Replicate budget."""
+    return the path of the cleaned JPEG plus the PreflightReport.  Raises
+    HTTPException 422 if the photo is unusable so staff can retake before we
+    spend Replicate budget.
+
+    The report carries the head_covering detection result so downstream
+    engines can shrink the face polygon when a covering is present.
+    """
     contents = await image.read()
     try:
         saved_path, report = prepare_upload(
@@ -330,7 +350,7 @@ async def _save_upload(image: UploadFile) -> Path:
         ) from e
     if report.warnings:
         logger.info("upload warnings: %s", report.warnings)
-    return saved_path
+    return saved_path, report
 
 
 def _load_catalogue() -> list[dict]:

@@ -40,11 +40,18 @@ def generate_beard_preview(
     customer_profile: dict,
     seed: int = 42,
     max_retries: int = 1,
+    head_covering_type: Optional[str] = None,
 ) -> PreviewResult:
     """Run a beard-only preview through FLUX Kontext.
 
     No retry loop and no validator: beard catalogue currently has no
     reference photos, so the validator branch would be skipped anyway.
+
+    Args:
+        head_covering_type: optional covering label from SP 1.7's detector
+            (turban / hijab / ghoonghat / cap_hat / other).  Threaded into
+            face_composite so the upper polygon is shrunk and fabric does
+            not bleed back over the Kontext output.
     """
     style = _load_beard_style(beard_style_id)
     if style is None:
@@ -80,6 +87,7 @@ def generate_beard_preview(
             kontext_output_url_or_path=raw_url,
             output_dir=uploads_dir,
             mode="beard",
+            head_covering_type=head_covering_type,
         )
         final_image_url = f"/uploads/{composited.name}"
 
