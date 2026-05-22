@@ -12,7 +12,16 @@
     "cultural": ["modern"],
     "maintenance": "high",
     "popularity_boost": 5,
-    "style_traits": ["pompadour", "fade", "structured", "height on top", "swept up", "undercut"]
+    "style_traits": ["pompadour", "fade", "structured", "height on top", "swept up", "undercut"],
+    "prompt_template": "A bold modern pompadour: hair on top stands 6-8 centimetres tall, dramatic vertical volume sweeping up and back from the forehead in a single high wave. Razor-sharp skin fade on the sides and back - hair clipped to near-zero on the temples and around the ears, with a crisp horizontal fade line above the ear. Pronounced undercut. Hairline sharp and defined. Heavy structured shape, polished and styled with product",
+    "mask_params": {
+      "offset_ratio": -0.02,
+      "extend_ratio": 1.20,
+      "lateral_extend": 0.10,
+      "ear_level_ratio": 0.70,
+      "feather_frac": 0.018
+    },
+    "guidance": 55.0
   },
   {
     "id": "mens_voluminous_top",
@@ -60,7 +69,16 @@
     "maintenance": "medium",
     "popularity_boost": 4,
     "quality_tier": "medium",
-    "style_traits": ["fringe", "textured", "swept", "soft", "modern"]
+    "style_traits": ["fringe", "textured", "swept", "soft", "modern"],
+    "prompt_template": "A modern Korean two-block fringe haircut: straight soft fringe falling forward across the forehead and reaching down to just above the eyebrows, completely covering the upper forehead. Medium-length layered hair on top, soft texture, slightly side-swept. Closely tapered sides and back, but NOT shaved - longer than a fade, sitting flat against the head. No volume on top, no pompadour shape, hair lies down naturally. K-pop styling, young modern look",
+    "mask_params": {
+      "offset_ratio": 0.22,
+      "extend_ratio": 0.55,
+      "lateral_extend": 0.20,
+      "ear_level_ratio": 0.82,
+      "feather_frac": 0.024
+    },
+    "guidance": 50.0
   },
   {
     "id": "mens_curly_volume",
@@ -104,7 +122,16 @@
     "cultural": ["modern"],
     "maintenance": "medium",
     "popularity_boost": 4,
-    "style_traits": ["fade", "textured", "structured", "short", "swept"]
+    "style_traits": ["fade", "textured", "structured", "short", "swept"],
+    "prompt_template": "A textured crop haircut: hair on top cropped to 2-3 centimetres maximum, choppy uneven ends giving a deliberately messy texture, hair pushed slightly forward over the forehead in a short blunt fringe. Tight low skin fade on the sides and back, sharp horizontal fade line, very short above the ears. Modern barbershop cut. Hair is short and structured, NOT raised tall, NOT swept back",
+    "mask_params": {
+      "offset_ratio": 0.08,
+      "extend_ratio": 0.35,
+      "lateral_extend": 0.10,
+      "ear_level_ratio": 0.72,
+      "feather_frac": 0.020
+    },
+    "guidance": 55.0
   },
   {
     "id": "mens_buzz_cut",

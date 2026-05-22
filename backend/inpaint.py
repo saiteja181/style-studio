@@ -160,6 +160,16 @@ def generate_preview_inpaint(
         raw_prompt, customer_profile=customer_profile, style=style,
     )
 
+    # Per-style guidance override (only honoured when caller didn't pass one
+    # explicitly that's already past the default).  Lets the catalogue tune
+    # how aggressively FLUX commits to each style.
+    if guidance == DEFAULT_GUIDANCE and "guidance" in style:
+        try:
+            guidance = float(style["guidance"])
+            logger.info("using per-style guidance for %s: %.1f", style_id, guidance)
+        except (TypeError, ValueError):
+            pass
+
     # Apply per-style mask overrides (fringe needs offset above forehead, long
     # styles need more headroom + lateral room, etc.).  Caller-supplied kwargs
     # still win because we only fill the param if it wasn't overridden upstream.
@@ -495,13 +505,10 @@ def _build_flux_prompt(
 
     return (
         f"{base}.{colour_clause}{texture_clause} "
-        "The hair sits naturally on the person's head with the SAME "
-        "ambient indoor lighting as the rest of the photo, no studio lighting, "
-        "no rim light, no glamour highlights. Hairline meets the forehead "
-        "with a soft realistic blend, no hard edge, no painted-on look, no "
-        "halo of stray pixels around the head. Photorealistic, sharp focus "
-        "on individual hair strands, casual everyday photo. "
-        f"Critically avoid: {NEGATIVE_PROMPT}."
+        "Photorealistic, sharp focus on individual hair strands, same "
+        "ambient indoor lighting as the rest of the photo, no studio "
+        "lighting, no halo around the head, no painted-on look, casual "
+        f"everyday photo. Critically avoid: {NEGATIVE_PROMPT}."
     )
 
 
