@@ -68,6 +68,12 @@ def _call_kontext(
                     "aspect_ratio": "match_input_image",
                     "output_format": "png",
                     "safety_tolerance": safety_tolerance,
+                    # Kontext upsamples the prompt internally before generation
+                    # (its LLM rewrites short prompts into more detailed ones).
+                    # Trade-off: weaker seed determinism (same seed may produce
+                    # slightly different outputs as the upsampler resamples) +
+                    # ~1-2s extra GPU time, in exchange for noticeably better
+                    # adherence to short style prompts.  Net win.
                     "prompt_upsampling": True,
                     "seed": seed,
                 },
@@ -130,6 +136,7 @@ def generate_preview(
         or (Path(__file__).resolve().parent.parent / "tests" / "uploads")
     )
 
+    attempt_idx = -1  # bound even when max_retries < 0 and the loop never runs
     started = time.time()
     verdict = "skipped"
     retries = 0
@@ -151,18 +158,20 @@ def generate_preview(
         )
         final_image_url = f"/uploads/{composited.name}"
 
-        if os.getenv("ANTHROPIC_API_KEY") and ref_path is not None:
-            verdict = _validate(source_path, ref_path, composited)
-            logger.info("validator attempt %d: %s", attempt_idx + 1, verdict)
-            if verdict in ("pass", "uncertain"):
-                # 'uncertain' counts as ship - validator parse error shouldn't
-                # burn a second Kontext call.
-                break
-        else:
-            verdict = "skipped"
+        if not os.getenv("ANTHROPIC_API_KEY"):
+            verdict = "skipped_no_anthropic_key"
+            break
+        if ref_path is None:
+            verdict = "skipped_no_reference"
+            break
+        verdict = _validate(source_path, ref_path, composited)
+        logger.info("validator attempt %d: %s", attempt_idx + 1, verdict)
+        if verdict in ("pass", "uncertain"):
+            # 'uncertain' counts as ship - validator parse error shouldn't
+            # burn a second Kontext call.
             break
 
-    retries = min(attempt_idx, max_retries)
+    retries = max(0, min(attempt_idx, max(0, max_retries)))
     elapsed_ms = int((time.time() - started) * 1000)
     return PreviewResult(
         image_url=final_image_url,

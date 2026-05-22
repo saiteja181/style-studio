@@ -28,6 +28,8 @@ CACHE_DIR = Path(__file__).resolve().parent.parent / "catalogue" / "validation_c
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"   # cheap + fast for QC
 MAX_TOKENS = 200
 
+VALIDATOR_SYSTEM_VERSION = "v1"
+
 VALIDATOR_SYSTEM = """You are a strict QA reviewer for an AI hairstyle preview tool.
 
 You will see THREE images:
@@ -166,6 +168,8 @@ def validate_generation(
 def _cache_key(source: Path, reference: Path, gen_url: str, model: str) -> str:
     h = hashlib.sha1()
     h.update(model.encode("utf-8"))
+    h.update(b"|")
+    h.update(VALIDATOR_SYSTEM_VERSION.encode("utf-8"))
     h.update(b"|")
     h.update(source.read_bytes())
     h.update(b"|")

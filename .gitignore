@@ -28,3 +28,10 @@ Thumbs.db
 .idea/
 *.log
 tests/acceptance/
+
+# Stale test-output dirs from exploratory work
+tests/comparison/
+tests/debug_pipeline/
+tests/indian_comparison/
+tests/online_corpus*/
+tests/debug_out/

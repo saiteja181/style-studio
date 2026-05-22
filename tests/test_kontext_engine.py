@@ -77,7 +77,10 @@ def test_generate_preview_end_to_end(tmp_path, monkeypatch):
     assert result.image_url.startswith(("/uploads/", "http"))
     assert result.style_id == "mens_textured_crop"
     assert result.retries in (0, 1)
-    assert result.validator_verdict in ("pass", "fail", "uncertain", "skipped")
+    assert result.validator_verdict in (
+        "pass", "fail", "uncertain", "skipped",
+        "skipped_no_anthropic_key", "skipped_no_reference",
+    )
     assert result.elapsed_ms > 0
 
 
@@ -168,3 +171,33 @@ def test_retries_counter_capped_at_max_retries(monkeypatch, tmp_path):
         f"got {result.retries}"
     )
     assert result.validator_verdict == "fail"
+
+
+def test_generate_preview_negative_max_retries_does_not_crash(monkeypatch, tmp_path):
+    """max_retries=-1 must not raise UnboundLocalError.  Negative values are
+    nonsensical but a defensive caller should get retries=0, not a crash."""
+    import backend.kontext_engine as ke
+
+    monkeypatch.setenv("STYLE_STUDIO_UPLOADS_DIR", str(tmp_path))
+
+    # The loop body never executes when max_retries=-1.  We don't need any
+    # stubs because _call_kontext is never reached.
+    profile = {"hair_color_rgb": (40, 30, 25), "hair_texture": "unknown"}
+    # Picking a style with no reference so the validator branch is also a
+    # no-op; though it doesn't matter since the loop never runs.
+    result = ke.generate_preview(
+        source_path=SOURCE_MAN,
+        style_id="mens_classic_side_part",
+        customer_profile=profile,
+        seed=42,
+        max_retries=-1,
+    )
+    assert result.retries == 0
+
+
+def test_style_not_found_error_is_generation_error():
+    """StyleNotFoundError must remain a subclass of GenerationError so callers
+    using `except GenerationError` continue to catch it.  Insurance against a
+    refactor breaking the exception hierarchy."""
+    from backend.kontext_engine import StyleNotFoundError, GenerationError
+    assert issubclass(StyleNotFoundError, GenerationError)
