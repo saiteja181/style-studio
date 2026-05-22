@@ -128,10 +128,18 @@ def prepare_upload(
         raise PreflightError(report)
 
     if face_fraction > MAX_FACE_FRACTION:
+        # We tried auto-padding this case and FLUX paints flat colour into
+        # the synthetic background area - worse than refusing.  A tight face
+        # crop genuinely doesn't have enough head visible for the hair
+        # pipeline to do useful work, so block with an actionable message.
         report = PreflightReport(
             status="block", code="FACE_TOO_CLOSE",
-            message=("Camera is too close. Step back so the customer's "
-                     "shoulders are visible in the frame."),
+            message=(
+                "Photo is too tightly cropped on the face - we need to see "
+                "the whole head (forehead to back of neck) to preview hair "
+                "changes. Take the photo from about chest level so the "
+                "customer's full head and shoulders are visible."
+            ),
             face_fraction=face_fraction, blur_score=blur_score,
             original_size=original_size, normalised_size=normalised_size,
         )

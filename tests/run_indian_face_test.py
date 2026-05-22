@@ -44,8 +44,10 @@ OUT_DIR = PROJECT_ROOT / "tests" / "indian_comparison"
 SELFIE_DIR = PROJECT_ROOT / "tests" / "selfies"
 
 SOURCES = [
-    ("a_young",  SELFIE_DIR / "test_indian_woman_a_padded.jpg",
+    ("a_young",  SELFIE_DIR / "test_indian_woman_a.jpg",
      "young woman (dark curly hair)"),
+    ("b_grey",   SELFIE_DIR / "test_indian_woman_b.jpg",
+     "older woman (grey hair - hard case)"),
 ]
 
 STYLES = [

@@ -272,26 +272,74 @@ def _bucket_skin_tone(rgb: np.ndarray) -> str:
     return "dark"
 
 
-def _sample_hair_color(image_rgb: np.ndarray, pts: np.ndarray, patch_radius: int = 25) -> np.ndarray:
-    """Sample hair color from a patch above the upper-face arc.
+def _sample_hair_color(
+    image_rgb: np.ndarray, pts: np.ndarray, patch_radius: int = 18,
+) -> np.ndarray:
+    """Sample hair colour from MULTIPLE patches across the actual hair zone.
 
-    Centered at the top forehead landmark, lifted upward by ~5% of face height.
-    Falls back to a neutral dark color if the sample area is out of frame.
+    A single patch above the forehead fails on:
+      - grey/silver hair where shadow patches dominate the mean
+      - patchy lighting where one bright spot biases the colour
+      - hairlines with a widow's peak / receding edge
+
+    Strategy here:
+      - Sample 7 patches: centre, ~1/3 left+right, ~2/3 left+right, and a
+        higher patch on each side closer to where hair texture lives.
+      - Reject any patch whose mean luminance is near-black (likely shadow
+        UNDER the hair, not the hair itself) UNLESS all patches qualify as
+        shadow (in which case the person has very dark hair, keep them).
+      - Take the median of the surviving patches per channel - median is far
+        more robust to one bright/dark outlier than mean.
     """
     h, w = image_rgb.shape[:2]
     forehead_y = float(pts[LM_FOREHEAD_TOP][1])
     chin_y = float(pts[LM_CHIN_BOTTOM][1])
-    face_h = abs(chin_y - forehead_y)
-    cx = int(pts[LM_FOREHEAD_TOP][0])
-    cy = int(forehead_y - face_h * 0.10)
-    x0 = max(0, cx - patch_radius)
-    x1 = min(w, cx + patch_radius)
-    y0 = max(0, cy - patch_radius)
-    y1 = min(h, cy + patch_radius)
-    patch = image_rgb[y0:y1, x0:x1]
-    if patch.size == 0:
-        return np.array([20, 20, 20])
-    return patch.reshape(-1, 3).mean(axis=0)
+    left_x = float(pts[LM_LEFT_CHEEK][0])
+    right_x = float(pts[LM_RIGHT_CHEEK][0])
+    face_h = max(1.0, abs(chin_y - forehead_y))
+    face_w = max(1.0, abs(right_x - left_x))
+
+    # Patch centres in (x, y) - all above the hairline by 5-25% of face height.
+    centres: list[tuple[int, int]] = []
+    for dy_frac, dx_frac in [
+        (0.10, 0.0),   # mid-forehead
+        (0.18, -0.25), # mid-left
+        (0.18,  0.25), # mid-right
+        (0.25, -0.40), # outer-left
+        (0.25,  0.40), # outer-right
+        (0.35,  0.0),  # well above mid-forehead
+        (0.32, -0.15),
+        (0.32,  0.15),
+    ]:
+        cx = int(pts[LM_FOREHEAD_TOP][0] + face_w * dx_frac)
+        cy = int(forehead_y - face_h * dy_frac)
+        centres.append((cx, cy))
+
+    samples: list[np.ndarray] = []
+    for cx, cy in centres:
+        x0 = max(0, cx - patch_radius)
+        x1 = min(w, cx + patch_radius)
+        y0 = max(0, cy - patch_radius)
+        y1 = min(h, cy + patch_radius)
+        if x1 - x0 < 4 or y1 - y0 < 4:
+            continue
+        patch = image_rgb[y0:y1, x0:x1].reshape(-1, 3).astype(np.float32)
+        samples.append(patch)
+
+    if not samples:
+        return np.array([20, 20, 20], dtype=np.float32)
+
+    all_pixels = np.concatenate(samples, axis=0)
+
+    # Drop pixels that are almost black (likely shadow rather than hair).  If
+    # the threshold removes everything (a person with truly very dark hair),
+    # keep all pixels so we still return a sensible colour.
+    luminance = all_pixels.mean(axis=1)
+    kept = all_pixels[luminance > 25]
+    if kept.shape[0] < 50:
+        kept = all_pixels
+
+    return np.median(kept, axis=0)
 
 
 def _describe_hair_color(rgb: np.ndarray) -> str:

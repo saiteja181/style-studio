@@ -30,10 +30,22 @@ from pathlib import Path
 from typing import Optional
 
 import cv2
+import mediapipe as mp
 import numpy as np
 from PIL import Image
 
 logger = logging.getLogger(__name__)
+
+_mp_face_mesh = mp.solutions.face_mesh
+
+# Forehead + cheek landmark indices for skin-anchored colour sampling.
+SKIN_SAMPLE_INDICES = [
+    10,   # mid-forehead
+    109, 338,         # forehead L+R of mid
+    151,              # upper forehead patch
+    50, 280,          # high cheek L+R
+    205, 425,         # mid cheek L+R
+]
 
 # Ring half-thickness in pixels for sampling boundary colour.  ~3% of face
 # width is a reasonable default; we cap it so a tight crop doesn't sample
@@ -75,15 +87,22 @@ def harmonise_with_source(
         mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_LINEAR)
 
     mask_bin = (mask >= 128).astype(np.uint8) * 255
-    inside_ring, outside_ring = _build_boundary_rings(mask_bin, RING_PX)
 
-    if inside_ring.sum() < 1000 or outside_ring.sum() < 1000:
-        # Not enough sample pixels to compute a reliable shift; skip the
-        # colour step but still do the composite.
-        logger.info("colour_match: boundary rings too thin, skipping LAB shift")
-        shifted = generated
+    # Sample SKIN patches on the source as the "this is what ambient light
+    # looks like on this person" reference.  Falls back to the boundary ring
+    # when face landmarks aren't available (synthetic test images, etc.).
+    skin_mask = _build_skin_sample_mask(source)
+    inside_ring, _ = _build_boundary_rings(mask_bin, RING_PX)
+
+    if skin_mask is not None and skin_mask.sum() > 1000 and inside_ring.sum() > 1000:
+        shifted = _lab_shift(source, generated, inside_ring, skin_mask)
     else:
-        shifted = _lab_shift(source, generated, inside_ring, outside_ring)
+        _, outside_ring = _build_boundary_rings(mask_bin, RING_PX)
+        if inside_ring.sum() < 1000 or outside_ring.sum() < 1000:
+            logger.info("colour_match: no skin sample + boundary rings thin, skipping LAB shift")
+            shifted = generated
+        else:
+            shifted = _lab_shift(source, generated, inside_ring, outside_ring)
 
     soft_alpha = mask.astype(np.float32) / 255.0
     soft_alpha = soft_alpha[..., None]
@@ -133,6 +152,35 @@ def _ring_mean(lab_img: np.ndarray, ring_mask: np.ndarray) -> np.ndarray:
     if not sel.any():
         return np.zeros(3, dtype=np.float32)
     return lab_img[sel].mean(axis=0)
+
+
+def _build_skin_sample_mask(rgb: np.ndarray) -> Optional[np.ndarray]:
+    """Disk patches at forehead + cheek landmarks - the right "this is the
+    person's ambient lighting" reference for LAB matching.  Returns None when
+    face detection fails; caller falls back to the outside-mask boundary ring.
+    """
+    h, w = rgb.shape[:2]
+    with _mp_face_mesh.FaceMesh(
+        static_image_mode=True, max_num_faces=1,
+        refine_landmarks=True, min_detection_confidence=0.5,
+    ) as fm:
+        result = fm.process(rgb)
+    if not result.multi_face_landmarks:
+        return None
+    lms = result.multi_face_landmarks[0].landmark
+    pts = np.array([(lm.x * w, lm.y * h) for lm in lms])
+    if len(pts) <= max(SKIN_SAMPLE_INDICES):
+        return None
+
+    # Patch radius scales with face size so we always grab enough pixels.
+    face_h = max(40.0, float(abs(pts[152][1] - pts[10][1])))
+    radius = max(8, int(face_h * 0.05))
+
+    mask = np.zeros((h, w), dtype=np.uint8)
+    for idx in SKIN_SAMPLE_INDICES:
+        cx, cy = int(pts[idx][0]), int(pts[idx][1])
+        cv2.circle(mask, (cx, cy), radius, 255, thickness=-1)
+    return mask
 
 
 def _build_boundary_rings(
