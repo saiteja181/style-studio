@@ -119,6 +119,7 @@ def generate_preview_inpaint(
     harmonise: bool = HARMONISE_DEFAULT,
     validate: bool = False,
     max_retries: int = 1,
+    customer_profile: Optional[dict] = None,
 ) -> InpaintResult:
     """Local hair-mask + FLUX Fill Pro inpaint.
 
@@ -155,7 +156,9 @@ def generate_preview_inpaint(
     raw_prompt = prompt_override if prompt_override else style.get("prompt_template", "")
     if not raw_prompt:
         raw_prompt = _build_default_prompt_from_style(style)
-    style_prompt = _build_flux_prompt(raw_prompt)
+    style_prompt = _build_flux_prompt(
+        raw_prompt, customer_profile=customer_profile, style=style,
+    )
 
     # Apply per-style mask overrides (fringe needs offset above forehead, long
     # styles need more headroom + lateral room, etc.).  Caller-supplied kwargs
@@ -178,7 +181,7 @@ def generate_preview_inpaint(
         raise InpaintError(f"could not open selfie: {e}") from e
 
     image_rgb = np.array(pil)
-    mask = _build_local_hair_mask(
+    mask, landmarks_xy = _build_local_hair_mask(
         image_rgb,
         offset_ratio=offset_ratio,
         extend_ratio=extend_ratio,
@@ -186,7 +189,20 @@ def generate_preview_inpaint(
         feather_px=feather_px,
         feather_frac=feather_frac,
         ear_level_ratio=ear_level_ratio,
+        return_landmarks=True,
     )
+    # Refine the coarse U-band with selfie-segmentation (drops background
+    # halo, follows the silhouette) and subtract the face polygon.  Local +
+    # free; degrades gracefully to U-band if anything fails.
+    try:
+        from backend.hair_mask import refine_with_selfie_segmentation
+        mask = refine_with_selfie_segmentation(
+            image_rgb=image_rgb,
+            u_band_mask=mask,
+            landmarks_xy=landmarks_xy,
+        )
+    except Exception as e:
+        logger.warning("hair-mask refinement skipped (%s); using raw U-band", e)
 
     # Persist mask to a temp PNG (or user-specified path) for upload.
     if save_mask_to is not None:
@@ -313,7 +329,8 @@ def _build_local_hair_mask(
     feather_px: int,
     ear_level_ratio: float,
     feather_frac: Optional[float] = None,
-) -> np.ndarray:
+    return_landmarks: bool = False,
+):
     """Build a U-shaped band mask covering the hair zone around the head.
 
     Geometry: a band that wraps the head from one ear, up over the forehead
@@ -396,6 +413,8 @@ def _build_local_hair_mask(
         k = max(3, effective_feather * 2 + 1)
         mask = cv2.GaussianBlur(mask, (k, k), 0)
 
+    if return_landmarks:
+        return mask, pts
     return mask
 
 
@@ -433,25 +452,69 @@ def _style_mask_params(style: dict) -> dict:
 
 # ---- helpers ----
 
-def _build_flux_prompt(raw_style_prompt: str) -> str:
+def _build_flux_prompt(
+    raw_style_prompt: str,
+    customer_profile: Optional[dict] = None,
+    style: Optional[dict] = None,
+) -> str:
     """Compose a FLUX-optimized prompt for hair-only inpainting.
 
-    FLUX prefers natural-language descriptions. The mask scopes regeneration to
-    the hair area only, so the prompt should describe ONLY hair appearance and
-    emphasize blending with the surrounding pixels (NOT studio lighting that
-    would clash with the source photo's actual lighting).
+    Layers, lightest-to-heaviest:
+      1. raw_style_prompt           - what the style is (catalogue / expert / auto).
+      2. customer colour anchor     - actual hair RGB hex sampled from source.
+      3. texture contrast           - "source curly, target visibly straight" cue
+                                      when the catalogue style disagrees with source.
+      4. shared boilerplate         - lighting + hairline + photoreal anchors.
     """
     base = raw_style_prompt.strip().rstrip(".")
+
+    colour_clause = ""
+    texture_clause = ""
+    if customer_profile:
+        rgb = customer_profile.get("hair_color_rgb")
+        if rgb and len(rgb) == 3:
+            r, g, b = (int(c) for c in rgb)
+            hex_code = f"#{r:02x}{g:02x}{b:02x}"
+            colour_clause = (
+                f" The new hair colour is exactly the customer's natural hair "
+                f"colour ({hex_code} - matches source). No bleaching, no "
+                "highlights, no colour drift."
+            )
+
+        src_texture = (customer_profile.get("hair_texture") or "").lower()
+        if style is not None and src_texture and src_texture != "unknown":
+            target_textures = [t.lower() for t in style.get("compat_texture", [])]
+            traits = [t.lower() for t in style.get("style_traits", [])]
+            if traits and src_texture not in target_textures:
+                first_target = traits[0]
+                texture_clause = (
+                    f" The new hair texture is visibly {first_target}, "
+                    f"clearly different from the customer's source {src_texture} "
+                    "texture, do not retain the original hair shape."
+                )
+
     return (
-        f"{base}. The hair sits naturally on the person's head with the SAME "
+        f"{base}.{colour_clause}{texture_clause} "
+        "The hair sits naturally on the person's head with the SAME "
         "ambient indoor lighting as the rest of the photo, no studio lighting, "
-        "no rim light, no glamour highlights. The hair colour stays in the "
-        "natural dark-brown to black family typical of South Asian hair unless "
-        "the style explicitly calls for a different colour. Hairline meets the "
-        "forehead with a soft realistic blend, no hard edge, no painted-on "
-        "look, no halo of stray pixels around the head. Photorealistic, sharp "
-        "focus on individual hair strands, casual everyday photo."
+        "no rim light, no glamour highlights. Hairline meets the forehead "
+        "with a soft realistic blend, no hard edge, no painted-on look, no "
+        "halo of stray pixels around the head. Photorealistic, sharp focus "
+        "on individual hair strands, casual everyday photo. "
+        f"Critically avoid: {NEGATIVE_PROMPT}."
     )
+
+
+# Negative prompt - terms FLUX should actively avoid producing in the masked
+# region.  Tuned against the failure modes we've seen on real salon photos.
+NEGATIVE_PROMPT = (
+    "ghosting, double hair, two hairstyles, blurry hair, plastic skin, "
+    "cartoon, illustration, deformed face, identity change, different person, "
+    "studio lighting, ring light, halo, halo around head, glowing edges, "
+    "painted-on hair, hair on forehead skin, floating hair strands in "
+    "background, mismatched hair colour, neon colours, unnatural saturation, "
+    "smudge, watercolour, oil painting, 3d render"
+)
 
 
 def _build_default_prompt_from_style(style: dict) -> str:
@@ -546,6 +609,47 @@ BALD_PROMPT = (
 )
 
 
+def build_shared_bald_canvas(
+    selfie_path: Path,
+    seed: Optional[int] = None,
+    save_mask_to: Optional[Path] = None,
+) -> dict:
+    """Run only pass 1 of the transform pipeline - erase hair to bald scalp.
+
+    Returns a dict {"bald_url", "mask_path", "seed"} that callers can hand to
+    generate_preview_erase_then_inpaint via the `shared_bald` argument.  This
+    is the optimisation that lets /generate-batch run N styles with just
+    1 erase + N inpaint passes instead of 2N FLUX calls.
+
+    Cost: 1 FLUX call (~$0.05).
+    """
+    # We piggy-back on generate_preview_inpaint for mask building + FLUX call,
+    # but the catalogue lookup would reject our synthetic id.  Use any real
+    # style id as a placeholder; the prompt_override forces the BALD prompt so
+    # the style itself doesn't affect output.  Pick the first style in the
+    # catalogue.
+    styles_for_placeholder = json.loads(CATALOGUE_PATH.read_text(encoding="utf-8"))
+    placeholder_style_id = styles_for_placeholder[0]["id"]
+
+    bald_result = generate_preview_inpaint(
+        selfie_path=selfie_path,
+        style_id=placeholder_style_id,
+        seed=seed,
+        save_mask_to=save_mask_to,
+        prompt_override=BALD_PROMPT,
+        guidance=75.0,
+        extend_ratio=1.15,
+        harmonise=False,
+        validate=False,
+        enhance=False,
+    )
+    return {
+        "bald_url": bald_result.image_url,
+        "mask_path": bald_result.mask_local_path,
+        "seed": seed,
+    }
+
+
 def generate_preview_erase_then_inpaint(
     selfie_path: Path,
     style_id: str,
@@ -554,6 +658,8 @@ def generate_preview_erase_then_inpaint(
     expert_model: Optional[str] = None,
     validate: bool = True,
     max_retries: int = 1,
+    customer_profile: Optional[dict] = None,
+    shared_bald: Optional[dict] = None,
     **inpaint_kwargs,
 ) -> InpaintResult:
     """Two-pass FLUX: erase existing hair to bald scalp, then inpaint the new
@@ -569,10 +675,6 @@ def generate_preview_erase_then_inpaint(
         raise InpaintError(f"Unknown style_id: {style_id}")
 
     ref_path = resolve_reference_path(style)
-    if ref_path is None:
-        raise InpaintError(
-            f"Style {style_id!r} has no reference photo; erase-mode requires one."
-        )
 
     # ---- RESULT CACHE: same (source, style, seed) returns instant URL ----
     cached = _get_cached_result(selfie_path, style_id, seed, "transform")
@@ -586,40 +688,62 @@ def generate_preview_erase_then_inpaint(
         )
 
     # ---- PASS 1: erase existing hair to bald scalp ----
-    # Use high guidance to force the model to actually render bare scalp instead
-    # of conservatively keeping existing hair pixels.
-    logger.info("erase-mode pass 1/2: erasing existing hair (high guidance)")
-    bald_kwargs = dict(inpaint_kwargs)
-    bald_kwargs["guidance"] = 75.0  # aggressive prompt adherence for clean erase
-    bald_kwargs["extend_ratio"] = 1.15  # extend mask higher so top-of-head hair is covered
-    bald_kwargs["harmonise"] = False    # bald pass MUST keep raw FLUX scalp; never composite hair back
-    bald_kwargs["validate"] = False     # bald output validated against a hairstyle ref makes no sense
-    bald_result = generate_preview_inpaint(
-        selfie_path=selfie_path,
-        style_id=style_id,
-        seed=seed,
-        save_mask_to=save_mask_to,
-        prompt_override=BALD_PROMPT,
-        enhance=False,
-        **bald_kwargs,
-    )
-
-    bald_url = bald_result.image_url
-    if not bald_url:
-        raise InpaintError("Pass 1 (erase) produced no URL")
-
-    # ---- PASS 2: ask Claude for the adapted style prompt, then inpaint
-    #             the bald canvas with the new hairstyle. ----
-    from backend.expert_consult import consult_for_style, ConsultError
-    try:
-        kwargs = {"model": expert_model} if expert_model else {}
-        adapted_prompt = consult_for_style(
-            source_image_path=selfie_path,
-            reference_image_path=ref_path,
-            **kwargs,
+    # When `shared_bald` is supplied (from /generate-batch), skip pass 1 entirely
+    # and reuse the precomputed bald URL + mask path.  This is the key
+    # optimisation that drops 3-style cost from 6 FLUX calls to 4.
+    if shared_bald is not None:
+        logger.info("erase-mode pass 1/2: SKIPPED (using shared bald canvas)")
+        bald_url = shared_bald["bald_url"]
+        bald_mask_path = Path(shared_bald["mask_path"])
+        bald_result_for_meta = shared_bald  # keep typing simple below
+    else:
+        logger.info("erase-mode pass 1/2: erasing existing hair (high guidance)")
+        bald_kwargs = dict(inpaint_kwargs)
+        bald_kwargs["guidance"] = 75.0  # aggressive prompt adherence for clean erase
+        bald_kwargs["extend_ratio"] = 1.15  # extend mask higher so top-of-head hair is covered
+        bald_kwargs["harmonise"] = False    # bald pass MUST keep raw FLUX scalp; never composite hair back
+        bald_kwargs["validate"] = False     # bald output validated against a hairstyle ref makes no sense
+        bald_result = generate_preview_inpaint(
+            selfie_path=selfie_path,
+            style_id=style_id,
+            seed=seed,
+            save_mask_to=save_mask_to,
+            prompt_override=BALD_PROMPT,
+            enhance=False,
+            **bald_kwargs,
         )
-    except ConsultError as e:
-        raise InpaintError(f"Claude consult failed: {e}") from e
+
+        bald_url = bald_result.image_url
+        if not bald_url:
+            raise InpaintError("Pass 1 (erase) produced no URL")
+        bald_mask_path = Path(bald_result.mask_local_path)
+        bald_result_for_meta = bald_result
+
+    # ---- PASS 2: pick a prompt for the new hairstyle. -----------------------
+    # Preferred: Claude expert consult (looks at source + reference, writes
+    # a customer-tailored prompt).  Falls back to the smart-default prompt
+    # built from catalogue metadata when:
+    #   - no reference photo is registered for this style, OR
+    #   - ANTHROPIC_API_KEY is missing, OR
+    #   - the consult call itself fails.
+    # This keeps transform mode universally available, with quality degrading
+    # gracefully rather than the whole call erroring out.
+    adapted_prompt: Optional[str] = None
+    consult_attempted = ref_path is not None and bool(os.getenv("ANTHROPIC_API_KEY"))
+    if consult_attempted:
+        from backend.expert_consult import consult_for_style, ConsultError
+        try:
+            kwargs = {"model": expert_model} if expert_model else {}
+            adapted_prompt = consult_for_style(
+                source_image_path=selfie_path,
+                reference_image_path=ref_path,
+                **kwargs,
+            )
+        except ConsultError as e:
+            logger.warning("expert consult unavailable, using smart-default: %s", e)
+
+    if not adapted_prompt:
+        adapted_prompt = _build_default_prompt_from_style(style)
 
     logger.info("erase-mode pass 2/2: drawing new hair on bald canvas")
     attempt_seeds = [seed]
@@ -632,17 +756,18 @@ def generate_preview_erase_then_inpaint(
     for attempt_idx, attempt_seed in enumerate(attempt_seeds):
         final_result = _inpaint_on_remote_url(
             source_url=bald_url,
-            mask_local_path=Path(bald_result.mask_local_path),
+            mask_local_path=bald_mask_path,
             prompt=adapted_prompt,
             style=style,
             seed=attempt_seed,
+            customer_profile=customer_profile,
             **{k: v for k, v in inpaint_kwargs.items()
                if k in ("steps", "guidance")},
         )
         if not validate or attempt_idx == len(attempt_seeds) - 1:
             break
         try:
-            from backend.output_validator import validate_generation, ValidationError as VE
+            from backend.output_validator import validate_generation
             validation = validate_generation(
                 source_path=selfie_path,
                 reference_path=ref_path,
@@ -666,7 +791,7 @@ def generate_preview_erase_then_inpaint(
         harmonised_path = harmonise_with_source(
             source_path=selfie_path,
             generated_url_or_path=final_image_url,
-            mask_path=Path(bald_result.mask_local_path),
+            mask_path=bald_mask_path,
             output_dir=selfie_path.parent,
         )
         final_image_url = f"/uploads/{harmonised_path.name}"
@@ -684,7 +809,7 @@ def generate_preview_erase_then_inpaint(
         prompt=adapted_prompt,
         steps=final_result["steps"],
         guidance=final_result["guidance"],
-        mask_local_path=str(bald_result.mask_local_path),
+        mask_local_path=str(bald_mask_path),
         model_ref=INPAINT_MODEL,
     )
     # Cache successful result so repeat customer/style requests are free
@@ -703,13 +828,16 @@ def _inpaint_on_remote_url(
     seed: Optional[int],
     steps: int = DEFAULT_STEPS,
     guidance: float = DEFAULT_GUIDANCE,
+    customer_profile: Optional[dict] = None,
 ) -> dict:
     """Run FLUX Fill Pro inpainting using a remote URL as the source.
 
     Reuses our local hair mask. Returns dict with image_url + params.
     """
     import replicate
-    style_prompt = _build_flux_prompt(prompt)
+    style_prompt = _build_flux_prompt(
+        prompt, customer_profile=customer_profile, style=style,
+    )
 
     try:
         with mask_local_path.open("rb") as mask_f:
