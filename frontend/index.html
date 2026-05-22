@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Style Studio - Salon AI Stylist</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #181b22;
+    --border: #262a33;
+    --text: #f1f3f5;
+    --muted: #9aa3ad;
+    --accent: #f5b942;
+    --accent-soft: rgba(245, 185, 66, 0.15);
+    --success: #4ade80;
+    --pill: #20242c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    padding: 20px 32px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+  header .badge {
+    font-size: 11px; color: var(--accent); background: var(--accent-soft);
+    padding: 4px 10px; border-radius: 100px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px; }
+  .hero { text-align: center; margin-bottom: 32px; }
+  .hero h2 { font-size: 32px; margin: 0 0 8px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--muted); margin: 0; }
+
+  .uploader {
+    background: var(--card); border: 2px dashed var(--border);
+    border-radius: 16px; padding: 48px; text-align: center;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  }
+  .uploader:hover { border-color: var(--accent); background: #1d2129; }
+  .uploader.active { border-color: var(--accent); background: var(--accent-soft); }
+  .uploader p { margin: 0; color: var(--muted); }
+  .uploader .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.6; }
+  .uploader input { display: none; }
+
+  .controls {
+    display: flex; gap: 12px; align-items: center; justify-content: center;
+    margin-top: 16px; flex-wrap: wrap;
+  }
+  .controls label {
+    background: var(--pill); padding: 8px 14px; border-radius: 100px;
+    color: var(--muted); font-size: 13px; cursor: pointer;
+  }
+  .controls select, .controls input[type=checkbox] { margin-left: 4px; }
+  .controls select {
+    background: transparent; color: var(--text); border: none; outline: none;
+  }
+  .btn {
+    background: var(--accent); color: #0a0c10; border: none;
+    padding: 12px 28px; border-radius: 100px; font-weight: 600;
+    cursor: pointer; font-size: 14px;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .status {
+    margin-top: 16px; padding: 12px 16px; border-radius: 8px;
+    text-align: center; font-size: 13px;
+  }
+  .status.info { background: var(--pill); color: var(--muted); }
+  .status.error { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+  .status.success { background: rgba(74, 222, 128, 0.15); color: var(--success); }
+
+  section { margin-top: 40px; display: none; }
+  section.active { display: block; }
+  section h3 {
+    font-size: 12px; color: var(--muted); margin: 0 0 16px;
+    text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
+  }
+
+  .profile {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px; display: grid;
+    grid-template-columns: 220px 1fr; gap: 24px; align-items: start;
+  }
+  .profile img { width: 100%; border-radius: 12px; }
+  .profile-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px;
+  }
+  .pf-item { display: flex; flex-direction: column; }
+  .pf-item .label { font-size: 11px; color: var(--muted);
+                    text-transform: uppercase; letter-spacing: 0.08em; }
+  .pf-item .value { font-size: 16px; font-weight: 600; margin-top: 2px; }
+
+  .recs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px; }
+  .rec-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden; cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+    display: flex; flex-direction: column;
+  }
+  .rec-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .rec-card.generating { opacity: 0.6; cursor: progress; }
+  .rec-card img.ref {
+    width: 100%; aspect-ratio: 1; object-fit: cover; background: #20242c;
+  }
+  .rec-card .body { padding: 14px 16px; flex: 1; display: flex;
+                    flex-direction: column; }
+  .rec-card .name { font-size: 15px; font-weight: 600; margin: 0; }
+  .rec-card .score {
+    font-size: 11px; color: var(--accent); margin-top: 2px;
+    font-weight: 700; letter-spacing: 0.04em;
+  }
+  .rec-card .why { font-size: 12px; color: var(--muted); margin-top: 8px;
+                   line-height: 1.45; flex: 1; }
+  .rec-card .traits { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+  .rec-card .trait {
+    background: var(--pill); color: var(--muted); font-size: 10px;
+    padding: 3px 8px; border-radius: 100px;
+  }
+  .rec-card .actions { margin-top: 10px; }
+  .rec-card .actions button {
+    width: 100%; background: var(--accent); color: #0a0c10; border: none;
+    padding: 8px; border-radius: 8px; font-weight: 600; cursor: pointer;
+    font-size: 12px;
+  }
+  .rec-card .actions button:disabled { background: var(--pill); color: var(--muted); }
+
+  .preview-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+    z-index: 100; align-items: center; justify-content: center; padding: 24px;
+  }
+  .preview-modal.active { display: flex; }
+  .preview-box {
+    background: var(--card); border-radius: 16px; padding: 24px;
+    max-width: 900px; width: 100%; max-height: 90vh; overflow: auto;
+  }
+  .preview-box h3 { font-size: 16px; color: var(--text); margin: 0 0 16px;
+                    text-transform: none; letter-spacing: 0; }
+  .preview-images { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .preview-images figure { margin: 0; }
+  .preview-images figcaption {
+    font-size: 11px; color: var(--muted); text-align: center;
+    margin-top: 6px; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .preview-images img { width: 100%; border-radius: 8px; }
+  .preview-close {
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    padding: 8px 16px; border-radius: 100px; cursor: pointer; margin-top: 16px;
+  }
+
+  .spinner {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid var(--muted); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin-right: 6px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Style Studio</h1>
+  <span class="badge">AI stylist for Indian salons</span>
+</header>
+
+<main>
+  <div class="hero">
+    <h2>See yourself in a new hairstyle</h2>
+    <p>Upload a clear front-facing photo. Our AI stylist analyzes your features and recommends styles that suit you.</p>
+  </div>
+
+  <label class="uploader" for="file-input" id="uploader">
+    <div class="icon">+</div>
+    <p><strong>Click or drop a photo here</strong></p>
+    <p style="margin-top:6px;font-size:12px;">Front-facing, hair visible, JPG/PNG</p>
+    <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp">
+  </label>
+
+  <div class="controls">
+    <label>Gender
+      <select id="gender">
+        <option value="">auto-detect</option>
+        <option value="male">male</option>
+        <option value="female">female</option>
+      </select>
+    </label>
+    <label>Occasion
+      <select id="occasion">
+        <option value="">any</option>
+        <option value="daily">daily</option>
+        <option value="professional">professional</option>
+        <option value="party">party</option>
+        <option value="bridal">bridal</option>
+        <option value="festive">festive</option>
+      </select>
+    </label>
+    <button class="btn" id="analyze-btn" disabled>Start consultation</button>
+  </div>
+
+  <div id="status" class="status info" style="display:none;"></div>
+
+  <section id="profile-section">
+    <h3>Customer analysis</h3>
+    <div class="profile">
+      <img id="profile-photo" alt="Customer">
+      <div class="profile-grid">
+        <div class="pf-item"><span class="label">Face shape</span><span class="value" id="pf-face"></span></div>
+        <div class="pf-item"><span class="label">Jawline</span><span class="value" id="pf-jaw"></span></div>
+        <div class="pf-item"><span class="label">Skin tone</span><span class="value" id="pf-skin"></span></div>
+        <div class="pf-item"><span class="label">Hair color</span><span class="value" id="pf-haircol"></span></div>
+        <div class="pf-item"><span class="label">Hair texture</span><span class="value" id="pf-texture"></span></div>
+        <div class="pf-item"><span class="label">Hairline</span><span class="value" id="pf-hairline"></span></div>
+        <div class="pf-item"><span class="label">Gender</span><span class="value" id="pf-gender"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="recs-section">
+    <h3>Recommended styles</h3>
+    <div class="recs" id="recs"></div>
+  </section>
+</main>
+
+<div class="preview-modal" id="preview-modal">
+  <div class="preview-box">
+    <h3 id="preview-title"></h3>
+    <div class="preview-images">
+      <figure>
+        <img id="preview-source" alt="Source">
+        <figcaption>You now</figcaption>
+      </figure>
+      <figure>
+        <img id="preview-generated" alt="Preview">
+        <figcaption>You with this style</figcaption>
+      </figure>
+    </div>
+    <p id="preview-reasoning" style="color:var(--muted);font-size:13px;margin-top:16px;"></p>
+    <button class="preview-close" onclick="closePreview()">Close</button>
+  </div>
+</div>
+
+<script>
+const API = location.origin;
+const fileInput = document.getElementById('file-input');
+const uploader = document.getElementById('uploader');
+const analyzeBtn = document.getElementById('analyze-btn');
+const status = document.getElementById('status');
+const profileSection = document.getElementById('profile-section');
+const recsSection = document.getElementById('recs-section');
+const recsContainer = document.getElementById('recs');
+
+let selectedFile = null;
+let uploadedImageUrl = null;
+
+uploader.addEventListener('dragover', e => {
+  e.preventDefault(); uploader.classList.add('active');
+});
+uploader.addEventListener('dragleave', () => uploader.classList.remove('active'));
+uploader.addEventListener('drop', e => {
+  e.preventDefault(); uploader.classList.remove('active');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  selectedFile = file;
+  uploader.querySelector('p strong').textContent = file.name;
+  analyzeBtn.disabled = false;
+  showStatus(`Ready: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
+}
+
+analyzeBtn.addEventListener('click', startConsultation);
+
+async function startConsultation() {
+  if (!selectedFile) return;
+  analyzeBtn.disabled = true;
+  showStatus('<span class="spinner"></span> Analyzing your features...', 'info');
+
+  const form = new FormData();
+  form.append('image', selectedFile);
+  const gender = document.getElementById('gender').value;
+  const occasion = document.getElementById('occasion').value;
+  if (gender) form.append('gender', gender);
+  if (occasion) form.append('occasion', occasion);
+  form.append('use_vision', 'true');
+
+  try {
+    const res = await fetch(API + '/consult', { method: 'POST', body: form });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    renderProfile(data.profile, data.uploaded_image_url);
+    renderRecommendations(data.recommendations);
+    showStatus(`Analysis complete. ${data.recommendations.length} styles recommended.`, 'success');
+    renderBatchButton(data.recommendations);
+  } catch (e) {
+    showStatus('Error: ' + e.message, 'error');
+  } finally {
+    analyzeBtn.disabled = false;
+  }
+}
+
+function renderProfile(p, imageUrl) {
+  uploadedImageUrl = imageUrl;
+  document.getElementById('profile-photo').src = API + imageUrl;
+  document.getElementById('pf-face').textContent = p.face_shape;
+  document.getElementById('pf-jaw').textContent = p.jawline;
+  document.getElementById('pf-skin').textContent = p.skin_tone_bucket;
+  document.getElementById('pf-haircol').textContent = p.hair_color_descriptor;
+  document.getElementById('pf-texture').textContent = p.hair_texture;
+  document.getElementById('pf-hairline').textContent = p.hairline_shape;
+  document.getElementById('pf-gender').textContent = p.estimated_gender;
+  profileSection.classList.add('active');
+}
+
+function renderRecommendations(recs) {
+  recsContainer.innerHTML = '';
+  recs.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'rec-card';
+    const refImg = r.reference_url
+      ? `<img class="ref" src="${API + r.reference_url}" alt="${r.style_name}">`
+      : `<div class="ref" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">no reference yet</div>`;
+    const traits = (r.style_traits || []).slice(0, 4)
+      .map(t => `<span class="trait">${t}</span>`).join('');
+    card.innerHTML = `
+      ${refImg}
+      <div class="body">
+        <div>
+          <p class="name">${r.style_name}</p>
+          <div class="score">${r.suit_score}/100 SUIT SCORE</div>
+        </div>
+        <p class="why">${r.reasoning}</p>
+        <div class="traits">${traits}</div>
+        <div class="actions">
+          <button onclick="generatePreview('${r.style_id}', '${r.style_name.replace(/'/g, "\\'")}', this)"
+                  ${r.has_reference ? '' : 'disabled'}>
+            ${r.has_reference ? 'Try this on me' : 'Reference photo missing'}
+          </button>
+        </div>
+      </div>
+    `;
+    recsContainer.appendChild(card);
+  });
+  recsSection.classList.add('active');
+}
+
+async function generatePreview(styleId, styleName, btn) {
+  if (!selectedFile) return;
+  const card = btn.closest('.rec-card');
+  card.classList.add('generating');
+  btn.textContent = 'Transforming hair... (~60s)';
+  btn.disabled = true;
+
+  const form = new FormData();
+  form.append('image', selectedFile);
+  form.append('style_id', styleId);
+  form.append('mode', 'transform');
+  form.append('seed', '42');
+
+  try {
+    const res = await fetch(API + '/generate', { method: 'POST', body: form });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    showPreview(styleName, data.image_url);
+  } catch (e) {
+    showStatus('Generation error: ' + e.message, 'error');
+  } finally {
+    card.classList.remove('generating');
+    btn.textContent = 'Try this on me';
+    btn.disabled = false;
+  }
+}
+
+function renderBatchButton(recs) {
+  const withRef = recs.filter(r => r.has_reference).slice(0, 5);
+  if (withRef.length < 2) return;
+  let bar = document.getElementById('batch-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'batch-bar';
+    bar.style.cssText = 'display:flex;justify-content:center;margin:24px 0;gap:12px;align-items:center;';
+    document.getElementById('recs-section').insertBefore(bar, document.getElementById('recs'));
+  }
+  bar.innerHTML = `
+    <button class="btn" id="batch-btn">Generate ALL top ${withRef.length} in parallel</button>
+    <span style="color:var(--muted);font-size:12px;">~60-90s total instead of ~${withRef.length * 60}s sequential</span>
+  `;
+  document.getElementById('batch-btn').onclick = () => batchGenerate(withRef);
+}
+
+async function batchGenerate(recs) {
+  const btn = document.getElementById('batch-btn');
+  btn.disabled = true;
+  btn.textContent = `Generating ${recs.length} styles in parallel...`;
+  // Visually mark all rec cards as generating
+  document.querySelectorAll('.rec-card').forEach(c => {
+    if (recs.some(r => c.querySelector('.name')?.textContent === r.style_name)) {
+      c.classList.add('generating');
+    }
+  });
+
+  const form = new FormData();
+  form.append('image', selectedFile);
+  form.append('style_ids', recs.map(r => r.style_id).join(','));
+  form.append('mode', 'transform');
+  form.append('seed', '42');
+
+  try {
+    const res = await fetch(API + '/generate-batch', { method: 'POST', body: form });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    // Inject generated images into each rec card
+    Object.entries(data.results).forEach(([styleId, result]) => {
+      const card = [...document.querySelectorAll('.rec-card')]
+        .find(c => recs.find(r => r.style_id === styleId)?.style_name === c.querySelector('.name')?.textContent);
+      if (!card) return;
+      card.classList.remove('generating');
+      if (result.status === 'ok') {
+        const refImg = card.querySelector('img.ref');
+        if (refImg) refImg.src = result.image_url;
+        const btn = card.querySelector('.actions button');
+        if (btn) {
+          btn.textContent = 'Open preview';
+          btn.onclick = () => showPreview(result.style_name, result.image_url);
+        }
+      } else {
+        const btn = card.querySelector('.actions button');
+        if (btn) btn.textContent = 'Generation failed';
+      }
+    });
+    btn.textContent = `Done - ${recs.length} previews ready`;
+  } catch (e) {
+    showStatus('Batch error: ' + e.message, 'error');
+    btn.textContent = `Try again`;
+    btn.disabled = false;
+  }
+}
+
+function showPreview(title, generatedUrl) {
+  document.getElementById('preview-title').textContent = title;
+  document.getElementById('preview-source').src = API + uploadedImageUrl;
+  document.getElementById('preview-generated').src = generatedUrl;
+  document.getElementById('preview-modal').classList.add('active');
+}
+function closePreview() {
+  document.getElementById('preview-modal').classList.remove('active');
+}
+
+function showStatus(html, kind) {
+  status.style.display = 'block';
+  status.className = 'status ' + (kind || 'info');
+  status.innerHTML = html;
+}
+</script>
+</body>
+</html>

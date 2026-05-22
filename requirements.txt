@@ -1,0 +1,21 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+python-dotenv==1.0.1
+pydantic==2.10.4
+
+# CV / ML
+mediapipe==0.10.20
+opencv-python==4.10.0.84
+pillow==11.1.0
+numpy<2.0
+
+# Image generation
+replicate==1.0.4
+httpx==0.28.1
+
+# Claude consult (Anthropic vision)
+anthropic>=0.103.1
+
+# Optional dev
+pytest==8.3.4
