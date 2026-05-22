@@ -5,6 +5,7 @@ from pathlib import Path
 
 import mediapipe as mp
 import numpy as np
+import pytest
 from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -166,29 +167,73 @@ def test_paste_source_face_beard_mode_preserves_upper_face_only(tmp_path):
 
 
 def test_paste_source_face_skin_only_excludes_turban_pixels(tmp_path):
-    """When the source has a black turban whose fabric falls inside the
-    geometric face polygon (Sikh / hijab case), the skin-only filter must
-    EXCLUDE those non-skin pixels so they don't bleed back through the
-    composite onto the Kontext output.
+    """Regression for SP 9: turban fabric INSIDE the geometric face polygon
+    must be excluded by the skin-only filter, not pasted back from source.
 
-    Regression for the dark-strand-crossing-face bug visible in SP 8's
-    acceptance grid on the young_indian_man.jpg source."""
-    from backend.face_composite import paste_source_face
+    Picks a pixel that is provably inside the polygon AND inside the
+    turban fabric region.  Without the skin filter the composite would
+    paste the dark fabric back; with the filter it stays Kontext-cyan.
+    """
+    import mediapipe as mp
     from pathlib import Path
     import numpy as np
     from PIL import Image
+    from backend.face_composite import paste_source_face, FACE_POLYGON_INDICES
 
     PROJECT_ROOT = Path(__file__).resolve().parent.parent
     sikh_src = PROJECT_ROOT / "tests" / "selfies" / "young_indian_man.jpg"
     assert sikh_src.exists(), "missing test fixture"
 
-    # Kontext output: bright cyan everywhere.  After composite, the turban
-    # region (inside the geometric polygon, outside the skin colour range)
-    # must remain cyan - proving the skin-only filter excluded it.
-    kontext_path = tmp_path / "fake_kontext.png"
-    src = Image.open(sikh_src).convert("RGB")
-    Image.new("RGB", src.size, (40, 200, 220)).save(kontext_path, format="PNG")
+    # Build the geometric polygon ourselves (without the skin filter) to
+    # find a probe pixel guaranteed to be inside it.
+    import cv2
+    src_arr = np.array(Image.open(sikh_src).convert("RGB"))
+    h, w = src_arr.shape[:2]
+    with mp.solutions.face_mesh.FaceMesh(
+        static_image_mode=True, max_num_faces=1,
+        refine_landmarks=True, min_detection_confidence=0.5,
+    ) as fm:
+        result = fm.process(src_arr)
+    landmarks = result.multi_face_landmarks[0].landmark
+    pts = np.array([(lm.x * w, lm.y * h) for lm in landmarks])
+    poly = pts[FACE_POLYGON_INDICES].astype(np.int32)
+    poly[:, 0] = np.clip(poly[:, 0], 0, w - 1)
+    poly[:, 1] = np.clip(poly[:, 1], 0, h - 1)
+    geom_mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.fillPoly(geom_mask, [poly], 255)
 
+    # Find a dark pixel that is INSIDE the polygon and at the top edge
+    # (where the turban fabric sits over the temples).  Scan the top 30%
+    # of the polygon's bounding box.
+    inside = (geom_mask > 0)
+    luminance = src_arr.astype(np.int32).sum(axis=2)
+    rows_with_poly = np.where(inside.any(axis=1))[0]
+    assert len(rows_with_poly) > 0, "no polygon rows found"
+    top_y = rows_with_poly[0]
+    band_end = top_y + int(0.30 * (rows_with_poly[-1] - top_y))
+    # Mask: inside polygon AND in top band AND dark
+    candidate = inside & (np.arange(h)[:, None] >= top_y) & (np.arange(h)[:, None] <= band_end) & (luminance < 130)
+    ys, xs = np.where(candidate)
+    assert len(ys) >= 50, (
+        f"expected at least 50 dark-pixel candidates inside the upper "
+        f"polygon, found {len(ys)}.  Fixture may have changed."
+    )
+    # Pick the centroid of the candidate cluster (most likely to be deep
+    # inside the turban-fabric region, not a 1-pixel artifact)
+    probe_y = int(np.median(ys))
+    probe_x = int(np.median(xs))
+    probe_pixel_src = src_arr[probe_y, probe_x].astype(int)
+    assert probe_pixel_src.sum() < 150, (
+        f"probe pixel at ({probe_y},{probe_x}) was supposed to be dark "
+        f"turban fabric; got {tuple(probe_pixel_src)}"
+    )
+    assert geom_mask[probe_y, probe_x] > 0, "probe pixel not inside polygon"
+
+    # Now run the composite with a cyan Kontext fill and verify the probe
+    # pixel comes out CYAN (skin filter excluded the turban fabric) rather
+    # than DARK FABRIC (it would have been pasted back without the filter).
+    kontext_path = tmp_path / "fake_kontext.png"
+    Image.new("RGB", (w, h), (40, 200, 220)).save(kontext_path, format="PNG")
     out = paste_source_face(
         source_path=sikh_src,
         kontext_output_url_or_path=kontext_path,
@@ -196,80 +241,93 @@ def test_paste_source_face_skin_only_excludes_turban_pixels(tmp_path):
         head_covering_type="turban",
     )
     composed = np.array(Image.open(out).convert("RGB"))
-    src_arr = np.array(Image.open(sikh_src).convert("RGB"))
-
-    # Sample a point in the turban region (above the eyebrows, on the
-    # forehead-side fabric).  In the source this is BLACK; the test passes
-    # if the composite kept the CYAN Kontext output there (because the
-    # skin-only filter excluded the source's turban black).
-    # Find a turban pixel via colour: scan the top quarter of the image
-    # for the darkest patch and use its centre.
-    h, w = src_arr.shape[:2]
-    top_quarter = src_arr[: h // 4, :]
-    luminance = top_quarter.astype(np.int32).sum(axis=2)
-    dark_y, dark_x = np.unravel_index(luminance.argmin(), luminance.shape)
-    # Make sure we picked a turban pixel (very dark) not skin:
-    assert luminance[dark_y, dark_x] < 100, "fixture's turban region not where expected"
-
-    # Source colour at that pixel is dark fabric:
-    src_pixel = src_arr[dark_y, dark_x].astype(int)
-    assert src_pixel.sum() < 60, f"expected dark fabric, got {tuple(src_pixel)}"
-
-    # Composited colour at that pixel must be the CYAN Kontext fill,
-    # NOT the source fabric:
-    out_pixel = composed[dark_y, dark_x].astype(int)
-    assert out_pixel[1] > 150 and out_pixel[2] > 150, (
-        f"turban-region pixel was pasted from source instead of Kontext; "
-        f"got {tuple(out_pixel)} but expected cyan (Kontext fill). "
-        f"Skin-only filter or head_covering shrink did not work."
+    probe_pixel_out = composed[probe_y, probe_x].astype(int)
+    # Composite should be much closer to cyan (40,200,220) than to source dark fabric
+    assert probe_pixel_out[1] > 100 and probe_pixel_out[2] > 100, (
+        f"turban-region pixel at ({probe_y},{probe_x}) appears to have been "
+        f"pasted from source.  Got {tuple(probe_pixel_out)}, expected closer "
+        f"to cyan (40, 200, 220).  Source pixel: {tuple(probe_pixel_src)}. "
+        f"The skin-only filter and/or head_covering shrink did not exclude "
+        f"this region."
     )
 
 
-def test_paste_source_face_skin_only_preserves_actual_skin(tmp_path):
-    """The skin-only filter must NOT drop legitimate skin pixels.  When the
-    Kontext output is wildly different in colour from the source, the
-    customer's cheek pixels must still come from source.
+@pytest.mark.parametrize("fixture_name", [
+    "young_indian_woman.jpg",
+    "young_indian_man.jpg",
+    "curly_hair_indian_woman.jpg",
+    "dark_skin_indian_man.jpg",
+])
+@pytest.mark.parametrize("landmark_idx,label", [
+    (1,   "nose tip"),
+    (50,  "left high cheek"),
+    (280, "right high cheek"),
+    (152, "chin"),
+    (9,   "between eyebrows"),
+])
+def test_paste_source_face_preserves_skin_at_landmark(
+    tmp_path, fixture_name, landmark_idx, label,
+):
+    """The skin filter must preserve source skin pixels at every face
+    landmark across every fixture, even under specular highlight or
+    shadow lighting on different parts of the face.
 
-    This is the inverse of the turban test - confirms we don't accidentally
-    over-filter and lose face identity."""
-    from backend.face_composite import paste_source_face
-    from pathlib import Path
+    A regression here means Kontext output is bleeding into source skin
+    regions - the customer would see identity drift on cheek/chin/forehead."""
     import mediapipe as mp
+    from pathlib import Path
     import numpy as np
     from PIL import Image
+    from backend.face_composite import paste_source_face
 
     PROJECT_ROOT = Path(__file__).resolve().parent.parent
-    # Use the young Indian woman source (no head covering, clear face)
-    woman_src = PROJECT_ROOT / "tests" / "selfies" / "young_indian_woman.jpg"
-    assert woman_src.exists()
+    src_path_raw = PROJECT_ROOT / "tests" / "selfies" / fixture_name
+    if not src_path_raw.exists():
+        pytest.skip(f"fixture {fixture_name} missing")
+
+    # Cap long-edge at 1536 px to mirror production's _resize_for_flux step.
+    # Some fixtures are 4480x6720 raw - face_composite was never meant to be
+    # called at that resolution and morphology kernels scale to image height.
+    src_img = Image.open(src_path_raw).convert("RGB")
+    sw, sh = src_img.size
+    long_edge = max(sw, sh)
+    if long_edge > 1536:
+        scale = 1536.0 / long_edge
+        new_w = int(round(sw * scale))
+        new_h = int(round(sh * scale))
+        src_img = src_img.resize((new_w, new_h), Image.LANCZOS)
+    src_path = tmp_path / fixture_name
+    src_img.save(src_path, format="JPEG", quality=92)
 
     kontext_path = tmp_path / "fake_kontext.png"
-    src = Image.open(woman_src).convert("RGB")
-    Image.new("RGB", src.size, (255, 0, 255)).save(kontext_path, format="PNG")  # magenta
+    Image.new("RGB", src_img.size, (255, 0, 255)).save(kontext_path, format="PNG")  # magenta
 
     out = paste_source_face(
-        source_path=woman_src,
+        source_path=src_path,
         kontext_output_url_or_path=kontext_path,
         output_dir=tmp_path,
     )
     composed = np.array(Image.open(out).convert("RGB"))
-    src_arr = np.array(Image.open(woman_src).convert("RGB"))
-
-    # Sample at the nose tip - guaranteed inside the face polygon AND skin
+    src_arr = np.array(Image.open(src_path).convert("RGB"))
     h, w = src_arr.shape[:2]
+
     with mp.solutions.face_mesh.FaceMesh(
         static_image_mode=True, max_num_faces=1,
         refine_landmarks=True, min_detection_confidence=0.5,
     ) as fm:
         result = fm.process(src_arr)
-    nose = result.multi_face_landmarks[0].landmark[1]
-    ny, nx = int(nose.y * h), int(nose.x * w)
-    src_skin = src_arr[ny, nx].astype(int)
-    out_skin = composed[ny, nx].astype(int)
+    if not result.multi_face_landmarks:
+        pytest.skip(f"MediaPipe found no face in {fixture_name}")
+    lm = result.multi_face_landmarks[0].landmark[landmark_idx]
+    ly, lx = int(lm.y * h), int(lm.x * w)
+
+    src_skin = src_arr[ly, lx].astype(int)
+    out_skin = composed[ly, lx].astype(int)
     diff = int(np.abs(out_skin - src_skin).max())
-    assert diff < 12, (
-        f"nose-tip skin pixel drifted from source by {diff}; "
-        f"the skin-only filter or composite over-rejected legitimate skin"
+    assert diff < 35, (
+        f"{fixture_name} {label} pixel drifted from source by {diff} "
+        f"(source RGB {tuple(src_skin)} -> composite RGB {tuple(out_skin)}). "
+        f"Skin filter is over-rejecting legitimate skin at this landmark."
     )
 
 

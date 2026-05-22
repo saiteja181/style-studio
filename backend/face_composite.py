@@ -84,16 +84,21 @@ SKIN_SAMPLE_INDICES = [
 ]
 
 
-def _sample_skin_lab(rgb_image: np.ndarray, landmarks_xy: np.ndarray) -> np.ndarray:
-    """Median Lab colour from skin patches at SKIN_SAMPLE_INDICES.
+def _sample_skin_lab_patches(
+    rgb_image: np.ndarray, landmarks_xy: np.ndarray,
+) -> np.ndarray:
+    """Return an (N, 3) array of Lab patch means - one per usable skin
+    landmark.  Each patch's mean is its own anchor for the nearest-patch
+    distance calculation in _build_skin_only_mask.  Drops patches whose
+    pixels are predominantly out-of-range (specular blow-out or deep shadow)
+    so they don't pollute the patch set.
 
-    Returns a (3,) float Lab vector.  Falls back to a generic Indian-skin Lab
-    colour (L=140, a=130, b=140) when no usable patches are found - this
-    keeps the filter conservative and never throws.
+    Returns empty array if no patches are usable - caller falls back to
+    unfiltered geometric mask.
     """
     h, w = rgb_image.shape[:2]
     lab_full = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2LAB).astype(np.float32)
-    patch_lab_means = []
+    patches = []
     radius = 8
     for idx in SKIN_SAMPLE_INDICES:
         if idx >= len(landmarks_xy):
@@ -104,15 +109,15 @@ def _sample_skin_lab(rgb_image: np.ndarray, landmarks_xy: np.ndarray) -> np.ndar
         if x1 - x0 < 4 or y1 - y0 < 4:
             continue
         patch = lab_full[y0:y1, x0:x1].reshape(-1, 3)
-        # Drop near-black and near-white pixels - typical lighting reflections
-        # / heavy shadow inside the patch don't represent median skin colour.
         l = patch[:, 0]
+        # Drop highlights and deep shadows within the patch - they don't
+        # represent the lighting-anchored skin colour we want.
         keep = (l > 30) & (l < 240)
         if keep.sum() >= 16:
-            patch_lab_means.append(patch[keep].mean(axis=0))
-    if not patch_lab_means:
-        return np.array([140.0, 130.0, 140.0], dtype=np.float32)
-    return np.median(np.stack(patch_lab_means, axis=0), axis=0)
+            patches.append(patch[keep].mean(axis=0))
+    if not patches:
+        return np.zeros((0, 3), dtype=np.float32)
+    return np.stack(patches, axis=0).astype(np.float32)
 
 
 def _build_skin_only_mask(
@@ -120,36 +125,51 @@ def _build_skin_only_mask(
     geometric_mask: np.ndarray,
     landmarks_xy: np.ndarray,
 ) -> np.ndarray:
-    """Return a uint8 mask that is the geometric face polygon AND-ed with
-    a skin-similarity filter.  Pixels that are inside the polygon but whose
-    Lab colour is far from the customer's sampled skin median (dark fabric,
-    hair, background) are EXCLUDED from preservation.
+    """Return geometric_mask AND-ed with a skin-similarity mask.
 
-    Small interior holes (eyes, mouth, nostrils, lips) are CLOSED via
-    morphology before the final smoothing so the skin filter only ever
-    removes the BIG non-skin regions (turban fabric, hijab edges, hair
-    bleeding through the temples).  Without this closing pass, the binary
-    Lab mask drops alpha at the nose tip / cheek where adjacent
-    mouth/eye pixels are non-skin and a Gaussian blur drags neighbouring
-    skin pixels down with them.
+    "Skin-similar" means: the pixel's Lab is close to AT LEAST ONE of the
+    sampled skin patches.  Using nearest-patch distance instead of distance
+    to the median anchor handles bi-modal lighting where one cheek is in
+    highlight and the other in shadow - the patch nearest each lighting
+    condition wins.
+
+    Interior face features (eye whites, lips, nostrils, eyebrows) that are
+    naturally darker than skin get filled in by MORPH_CLOSE with a kernel
+    sized to image height (so the same code works at 768px test fixtures
+    and 1536px production output).
     """
-    skin_lab = _sample_skin_lab(rgb_image, landmarks_xy)
+    skin_lab_patches = _sample_skin_lab_patches(rgb_image, landmarks_xy)
+    if skin_lab_patches.shape[0] == 0:
+        # Couldn't sample any usable skin - fall back to the unfiltered
+        # geometric mask rather than mutilating identity.
+        return geometric_mask
+
     lab = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2LAB).astype(np.float32)
-    # Per-pixel Lab distance from the sampled skin median:
-    delta = lab - skin_lab.reshape(1, 1, 3)
-    dist = np.sqrt((delta * delta).sum(axis=2))
-    skin_similar = (dist < SKIN_LAB_DISTANCE).astype(np.uint8) * 255
-    # Morphological closing fills the small interior holes (eyes, lips,
-    # nostrils) so they stay inside the preserved region.  The kernel must
-    # be larger than the biggest feature hole (~25 px on a 1024-tall image
-    # for the open mouth on a smile photo) but smaller than the smallest
-    # non-skin region we want to KEEP excluded (turban temple band ~80 px).
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (31, 31))
-    skin_filled = cv2.morphologyEx(skin_similar, cv2.MORPH_CLOSE, kernel)
-    # AND with the existing geometric mask:
-    combined = cv2.bitwise_and(geometric_mask, skin_filled)
-    # Smooth the resulting mask - the per-pixel filter is binary which can
-    # create stippled edges.  A small Gaussian blur recovers a feathered look.
+    h, w = lab.shape[:2]
+    # For each pixel, find the minimum Lab distance to ANY of the patches.
+    # We iterate one patch at a time so peak memory stays at one (h, w)
+    # distance array (vs. an (h*w, K, 3) tensor that would be 1.8 GB on a
+    # 4480x6720 fixture).
+    min_dist = np.full((h, w), np.inf, dtype=np.float32)
+    for patch in skin_lab_patches:
+        delta = lab - patch.reshape(1, 1, 3)
+        dist = np.sqrt((delta * delta).sum(axis=2))              # (h, w)
+        np.minimum(min_dist, dist, out=min_dist)
+
+    skin_similar = (min_dist < SKIN_LAB_DISTANCE).astype(np.uint8) * 255
+
+    # Fill interior face holes (eyes, lips, nostrils) so they're preserved
+    # even though their Lab differs from skin.  Kernel size scales with
+    # image height so the same constant works across 768px tests and
+    # 1536px production images.  The 4% factor is calibrated empirically:
+    # smaller and a 1536-tall mouth (~50 px) isn't fully closed; larger
+    # (>=5%) and a narrow turban-fabric band gets bridged into the skin
+    # region on 750-tall test fixtures.
+    kernel_size = max(15, int(h * 0.04) // 2 * 2 + 1)  # odd >= 15
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+    skin_similar = cv2.morphologyEx(skin_similar, cv2.MORPH_CLOSE, kernel)
+
+    combined = cv2.bitwise_and(geometric_mask, skin_similar)
     return cv2.GaussianBlur(combined, (9, 9), 0)
 
 
@@ -219,18 +239,33 @@ def paste_source_face(
     if head_covering_type in ("turban", "hijab", "ghoonghat", "cap_hat", "other") \
             and face_alpha is not None:
         h_img, w_img = face_alpha.shape
-        # Find the topmost row where the mask is non-zero
         rows_with_mask = np.where(face_alpha.max(axis=1) > 16)[0]
         if rows_with_mask.size > 0:
             top_y = int(rows_with_mask[0])
             bottom_y = int(rows_with_mask[-1])
             face_h = max(1, bottom_y - top_y)
             shrink_px = int(face_h * 0.12)
-            # Zero out the top `shrink_px` rows of the mask:
-            cutoff = min(h_img, top_y + shrink_px)
-            face_alpha[top_y:cutoff, :] = 0
-            # Re-feather the new top edge:
-            face_alpha = cv2.GaussianBlur(face_alpha, (15, 15), 0)
+            # Per-column polygon-aware shrink: for each column, find its
+            # topmost mask row and zero shrink_px rows starting from that
+            # row downward.  Columns whose topmost row is already deeper
+            # (e.g. side temples) get little or no shrink, so we don't
+            # eat forehead skin where the polygon is already low.
+            # Vectorised: build a (h_img,) row index array, then a (h_img,
+            # w_img) "is this row within shrink_px of the column's top?"
+            # mask, then zero those positions.
+            mask_bool = face_alpha > 16
+            # col_top: topmost row per column (h_img if column has no mask)
+            row_indices = np.arange(h_img)[:, None]              # (h_img, 1)
+            inf_for_empty = np.where(mask_bool, row_indices, h_img)
+            col_top = inf_for_empty.min(axis=0)                  # (w_img,)
+            # For each pixel, true if row in [col_top, col_top + shrink_px)
+            in_shrink_band = (
+                (row_indices >= col_top[None, :])
+                & (row_indices < (col_top + shrink_px)[None, :])
+            )
+            shrunk = face_alpha.copy()
+            shrunk[in_shrink_band] = 0
+            face_alpha = cv2.GaussianBlur(shrunk, (15, 15), 0)
 
     alpha = (face_alpha.astype(np.float32) / 255.0)[..., None]
     composed = (
