@@ -29,6 +29,35 @@ logger = logging.getLogger(__name__)
 # files (here AND the catalog upsampling flag).
 
 
+def build_hair_only_prompt(style: dict, customer_profile: dict) -> str:
+    """Compose a hair-only prompt for FLUX Fill (SP 11 architecture).
+
+    Because FLUX Fill mathematically cannot modify pixels outside the
+    mask, we DROP every clause that the old Kontext prompt used to
+    protect identity:
+      - "Change ONLY the hairstyle" wrapper
+      - "Keep the face, eyes, expression, beard, eyebrows, glasses,
+         clothing, hands, and background exactly identical" - all
+        outside the mask, can't change by construction
+      - anti-forelock clause - if a forelock would fall over the face,
+        the mask doesn't extend there so the forelock can't get drawn
+      - glasses preservation clause - glasses are outside the mask
+      - "same ambient indoor lighting" - background lighting outside
+        the mask is byte-identical
+
+    What remains: two sentences describing the hair itself.  Hair
+    shape, color (anchored to the customer's natural shade so the
+    salon's colour-correctness promise holds), texture.  That's it.
+    """
+    base = style.get("prompt_template") or _default_from_style(style)
+    colour = _colour_clause(customer_profile)
+    texture = _texture_contrast_clause(style, customer_profile)
+    return (
+        f"{base}.{colour}{texture} Photoreal, salon-portrait quality, "
+        f"natural lighting, sharp focus on the hair."
+    )
+
+
 def build_edit_prompt(
     style: dict,
     customer_profile: dict,

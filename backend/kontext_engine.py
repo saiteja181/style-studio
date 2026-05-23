@@ -246,7 +246,20 @@ def generate_preview(
     cost_ledger: Optional[CostLedger] = None,
     glasses_detected: bool = False,
 ) -> PreviewResult:
-    """Run a full preview: build prompt -> Kontext -> face composite ->
+    """DEPRECATED as of SP 11: use inpaint_engine.generate_hair_preview.
+
+    The new pipeline replaces Kontext + face-swap + validator-retry
+    with FLUX-Fill-Pro masked inpainting.  Identity is guaranteed by
+    construction (FLUX Fill cannot modify pixels outside the mask) so
+    the best-of-N retry roulette this function performs is unnecessary.
+    main.py routes /generate to inpaint_engine, not here.
+
+    This function is kept for backwards compat with existing tests and
+    for callers that want the Kontext baseline for comparison.
+
+    Original docstring follows:
+
+    Run a full preview: build prompt -> Kontext -> face composite ->
     validate.  Generates up to (max_retries + 1) attempts with different
     seeds and returns the BEST-scoring one (best-of-N).  Default is
     3 attempts: covers the natural variability in Kontext + face-swap

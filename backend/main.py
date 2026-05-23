@@ -22,9 +22,12 @@ from backend.customer_analysis import analyze_customer, AnalysisError
 from backend.style_matcher import recommend_styles
 from backend.input_pipeline import prepare_upload, PreflightError, PreflightReport
 from backend.kontext_engine import (
-    generate_preview, GenerationError, StyleNotFoundError, CostCapExceeded,
-    CostLedger,
+    GenerationError, StyleNotFoundError, CostCapExceeded, CostLedger,
 )
+# SP 11: hair-masked inpainting replaces the Kontext + face-swap pipeline.
+# Imported under the public name `generate_preview` so the route handlers
+# below don't need to change.
+from backend.inpaint_engine import generate_hair_preview as generate_preview
 
 # Per-customer session ledgers so hair and beard previews share the same
 # budget cap (rather than each route getting its own private $0.50).

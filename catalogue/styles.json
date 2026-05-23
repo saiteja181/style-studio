@@ -46,7 +46,8 @@
     },
     "guidance": 70.0,
     "upsampling": false,
-    "suppress_forelock": true
+    "suppress_forelock": true,
+    "expected_silhouette": "short"
   },
   {
     "id": "mens_voluminous_top",
@@ -84,7 +85,8 @@
       "textured",
       "voluminous",
       "modern"
-    ]
+    ],
+    "expected_silhouette": "short"
   },
   {
     "id": "mens_long_swept_back",
@@ -121,7 +123,8 @@
       "voluminous",
       "modern",
       "side-part"
-    ]
+    ],
+    "expected_silhouette": "medium"
   },
   {
     "id": "mens_korean_fringe",
@@ -168,7 +171,8 @@
     },
     "guidance": 70.0,
     "upsampling": false,
-    "suppress_forelock": true
+    "suppress_forelock": true,
+    "expected_silhouette": "short"
   },
   {
     "id": "mens_curly_volume",
@@ -206,7 +210,8 @@
       "natural",
       "textured",
       "wavy"
-    ]
+    ],
+    "expected_silhouette": "short"
   },
   {
     "id": "mens_classic_side_part",
@@ -245,7 +250,8 @@
     "prompt_template": "A classic Indian office-going men's side-part haircut: hair on top approximately 3 centimetres long, neatly combed FROM A CLEAN SHARP SIDE PARTING to one side - the parting must be CLEARLY VISIBLE as a thin straight line on the scalp. Hair sits flat and polished, NOT raised, NOT swept up. Sides and back trimmed short but NOT faded, slightly tapered. Conservative professional styling, suitable for Indian corporate offices. Hairline neat and clean. The source hair must be restructured to show the sharp side parting",
     "guidance": 70.0,
     "upsampling": false,
-    "suppress_forelock": true
+    "suppress_forelock": true,
+    "expected_silhouette": "short"
   },
   {
     "id": "mens_textured_crop",
@@ -291,7 +297,8 @@
     },
     "guidance": 70.0,
     "upsampling": false,
-    "suppress_forelock": true
+    "suppress_forelock": true,
+    "expected_silhouette": "short"
   },
   {
     "id": "mens_buzz_cut",
@@ -334,7 +341,8 @@
       "low maintenance"
     ],
     "upsampling": false,
-    "suppress_forelock": true
+    "suppress_forelock": true,
+    "expected_silhouette": "short"
   },
   {
     "id": "mens_top_knot",
@@ -372,7 +380,8 @@
       "tied up",
       "long sides",
       "modern"
-    ]
+    ],
+    "expected_silhouette": "medium"
   },
   {
     "id": "mens_curly_afro",
@@ -412,7 +421,8 @@
       "voluminous",
       "natural",
       "tight curls"
-    ]
+    ],
+    "expected_silhouette": "short"
   },
   {
     "id": "mens_long_flowing",
@@ -449,7 +459,8 @@
       "shoulder-length",
       "wavy",
       "natural"
-    ]
+    ],
+    "expected_silhouette": "long"
   },
   {
     "id": "indian_braid_long",
@@ -489,7 +500,8 @@
       "structured"
     ],
     "prompt_template": "A classic long Indian braid (chotti): hair pulled back TIGHTLY from the forehead with a centre or side parting (the parting must be CLEARLY VISIBLE as a clean line on the scalp), gathered at the nape, then PLAITED into a SINGLE THICK BRAID with VISIBLE PLAIT SEGMENTS hanging down the back to near waist length. The braid is NEAT, STRUCTURED, traditional - the individual plait crosses must be visible. Hair must NOT be loose or flowing; it must be tightly braided. Hairline visible and clean. Often worn for daily traditional wear, festive occasions, or with a small white-jasmine garland (gajra) tucked at the top of the braid. The source hair must be fully restructured into this braided shape",
-    "guidance": 70.0
+    "guidance": 70.0,
+    "expected_silhouette": "very_long"
   },
   {
     "id": "modern_chin_bob",
@@ -526,7 +538,8 @@
     ],
     "prompt_template": "A modern chin-length blunt bob: hair cut SHARPLY straight across at chin level (jaw line) - the bottom edge must be a CLEAN HORIZONTAL LINE level with the chin, not feathered, not layered. Hair falls smoothly from a centre or slight side parting, hanging flat to chin level on both sides of the face, no longer. Sleek polished finish, modern salon styling popular for working professional women. The source hair must be visibly SHORTER than before, ending at chin level, not flowing past the shoulders",
     "guidance": 70.0,
-    "needs_reference": true
+    "needs_reference": true,
+    "expected_silhouette": "short"
   },
   {
     "id": "side_swept_layers",
@@ -565,7 +578,8 @@
     ],
     "prompt_template": "Medium-length hair with VISIBLE LAYERS at multiple depths: hair cut in distinct stepped layers, the shortest layer framing the face just below the cheekbones, mid layer at the jawline, longest layer at shoulder length - the layer EDGES must be VISIBLY DISTINCT from one another. Hair swept to one side from a deep side parting, soft side-swept fringe across the forehead. Soft wavy texture throughout, modern Indian salon styling for working women. Different from a bob (layered, not blunt) and different from curtain bangs (sweep to one side, not centre-parted)",
     "guidance": 70.0,
-    "needs_reference": true
+    "needs_reference": true,
+    "expected_silhouette": "medium"
   },
   {
     "id": "bridal_juda",
@@ -605,7 +619,8 @@
       "elegant",
       "structured"
     ],
-    "prompt_template": "A traditional Indian bridal bun (juda): hair pulled back from the forehead, gathered up high at the crown of the head, and wound into a large structured bun decorated with flowers, hairpins, or ornaments. Sometimes a long covering veil drapes from the bun. Often paired with maang tikka jewellery on the centre parting. Heavy, formal, elegant, occupies significant volume above and behind the head"
+    "prompt_template": "A traditional Indian bridal bun (juda): hair pulled back from the forehead, gathered up high at the crown of the head, and wound into a large structured bun decorated with flowers, hairpins, or ornaments. Sometimes a long covering veil drapes from the bun. Often paired with maang tikka jewellery on the centre parting. Heavy, formal, elegant, occupies significant volume above and behind the head",
+    "expected_silhouette": "medium"
   },
   {
     "id": "curtain_bangs_medium",
@@ -644,7 +659,8 @@
       "modern"
     ],
     "prompt_template": "Medium-length hair with modern CURTAIN BANGS: hair falls to shoulder length, with face-framing CURTAIN BANGS PARTED IN THE CENTRE and SWEEPING OUTWARD to either side of the face - the bangs are LONGEST near the cheekbones and gradually blend back into the side hair, like opening curtains framing a window. The centre forehead is PARTLY VISIBLE between the parted bangs, NOT fully covered. The rest of the hair is medium length with soft wavy texture. Soft, modern, feminine Indian salon styling. The source hair must be restructured to show the centre-parted curtain bangs clearly; this is NOT a full straight fringe and NOT just side-swept layers",
-    "guidance": 70.0
+    "guidance": 70.0,
+    "expected_silhouette": "medium"
   },
   {
     "id": "maharashtrian_bridal",
@@ -685,7 +701,8 @@
       "structured",
       "traditional"
     ],
-    "prompt_template": "A traditional Maharashtrian bridal updo: hair pulled back tightly from a centre parting, gathered into a high structured bun (khopa) decorated with mogra flowers and a mundavalya (forehead pearl strings) draped from the bun across the forehead. Heavy traditional ornaments, hairline visible and clean, the bun sits high at the crown"
+    "prompt_template": "A traditional Maharashtrian bridal updo: hair pulled back tightly from a centre parting, gathered into a high structured bun (khopa) decorated with mogra flowers and a mundavalya (forehead pearl strings) draped from the bun across the forehead. Heavy traditional ornaments, hairline visible and clean, the bun sits high at the crown",
+    "expected_silhouette": "long"
   },
   {
     "id": "bengali_bridal",
@@ -725,7 +742,8 @@
       "elegant",
       "traditional"
     ],
-    "prompt_template": "A Bengali bridal hairstyle: hair pulled back from a centre parting into a soft low bun at the nape, with a tall white sholar mukut (pith headdress) sitting on top of the head and a smaller matching topor for the groom optional. Forehead decorated with red and white chandan tikka patterns. Hair is sleek, traditional, ceremonial"
+    "prompt_template": "A Bengali bridal hairstyle: hair pulled back from a centre parting into a soft low bun at the nape, with a tall white sholar mukut (pith headdress) sitting on top of the head and a smaller matching topor for the groom optional. Forehead decorated with red and white chandan tikka patterns. Hair is sleek, traditional, ceremonial",
+    "expected_silhouette": "long"
   },
   {
     "id": "kerala_bridal",
@@ -766,7 +784,8 @@
       "traditional",
       "floral"
     ],
-    "prompt_template": "A Kerala traditional bridal braid (kondai): hair gathered from a centre parting, plaited into a single thick braid hanging down the back to waist length, completely wrapped in a long garland of fresh white jasmine flowers (mullapoo) and small marigold accents. Sleek polished hair at the crown, neat hairline"
+    "prompt_template": "A Kerala traditional bridal braid (kondai): hair gathered from a centre parting, plaited into a single thick braid hanging down the back to waist length, completely wrapped in a long garland of fresh white jasmine flowers (mullapoo) and small marigold accents. Sleek polished hair at the crown, neat hairline",
+    "expected_silhouette": "long"
   },
   {
     "id": "punjabi_bridal_paranda",
@@ -807,7 +826,8 @@
       "traditional",
       "ornamented"
     ],
-    "prompt_template": "A Punjabi bridal hairstyle: hair pulled back tightly into a sleek long braid extending past the waist, with a colourful tasselled paranda (decorative braid extension with silk threads and small mirror-work) plaited into the braid, multiple bright tassels hanging from the end. Hairline neat, centre parting visible at the top"
+    "prompt_template": "A Punjabi bridal hairstyle: hair pulled back tightly into a sleek long braid extending past the waist, with a colourful tasselled paranda (decorative braid extension with silk threads and small mirror-work) plaited into the braid, multiple bright tassels hanging from the end. Hairline neat, centre parting visible at the top",
+    "expected_silhouette": "very_long"
   },
   {
     "id": "tamil_bridal_jada",
@@ -848,7 +868,8 @@
       "traditional",
       "ornamented"
     ],
-    "prompt_template": "A Tamil bridal jada (braided long hair): hair pulled back from a centre parting and plaited into a thick long braid down the back, decorated with traditional gold-tone hair ornaments (jadanagam, thalaisaamaan) running along the length of the braid, and white jasmine flowers (mullapoo) wrapped around the crown. Sleek polished hair, ceremonial"
+    "prompt_template": "A Tamil bridal jada (braided long hair): hair pulled back from a centre parting and plaited into a thick long braid down the back, decorated with traditional gold-tone hair ornaments (jadanagam, thalaisaamaan) running along the length of the braid, and white jasmine flowers (mullapoo) wrapped around the crown. Sleek polished hair, ceremonial",
+    "expected_silhouette": "very_long"
   },
   {
     "id": "south_indian_braid_jasmine",
@@ -890,7 +911,8 @@
       "floral",
       "daily"
     ],
-    "prompt_template": "A classic South Indian braid (nadu-rekai): hair pulled back from a clean centre parting, plaited into a single neat braid hanging down the back to mid-back length, with a small string of fresh white jasmine flowers tucked at the top of the braid. Simple, traditional, suitable for everyday wear or temple visits"
+    "prompt_template": "A classic South Indian braid (nadu-rekai): hair pulled back from a clean centre parting, plaited into a single neat braid hanging down the back to mid-back length, with a small string of fresh white jasmine flowers tucked at the top of the braid. Simple, traditional, suitable for everyday wear or temple visits",
+    "expected_silhouette": "very_long"
   },
   {
     "id": "gujarati_sari_pallu_braid",
@@ -927,7 +949,8 @@
       "traditional",
       "festive"
     ],
-    "prompt_template": "A Gujarati festive braid: hair plaited into a long single braid down the back, with a colourful Gujarati sari pallu draped over the head and one shoulder framing the face. Hair pulled back neatly with a centre parting, traditional ghagra-choli styling, festive bandhani patterns implied"
+    "prompt_template": "A Gujarati festive braid: hair plaited into a long single braid down the back, with a colourful Gujarati sari pallu draped over the head and one shoulder framing the face. Hair pulled back neatly with a centre parting, traditional ghagra-choli styling, festive bandhani patterns implied",
+    "expected_silhouette": "long"
   },
   {
     "id": "marathi_khopa",
@@ -966,7 +989,8 @@
       "traditional",
       "structured"
     ],
-    "prompt_template": "A Maharashtrian khopa: hair pulled back from a centre parting and gathered into a low side bun resting on the left shoulder, decorated with a small string of mogra flowers wrapped around the bun. Traditional nauvari sari styling implied, sleek polished hair at the crown"
+    "prompt_template": "A Maharashtrian khopa: hair pulled back from a centre parting and gathered into a low side bun resting on the left shoulder, decorated with a small string of mogra flowers wrapped around the bun. Traditional nauvari sari styling implied, sleek polished hair at the crown",
+    "expected_silhouette": "medium"
   },
   {
     "id": "kashmiri_kalpushya",
@@ -1004,7 +1028,8 @@
       "traditional",
       "regional"
     ],
-    "prompt_template": "A Kashmiri traditional hairstyle: hair plaited into multiple thin braids gathered at the back into a longer thick braid (kalpushya), decorated with simple silver-tone clips and small fabric tassels. Hair pulled back from a centre parting, traditional pheran-style framing"
+    "prompt_template": "A Kashmiri traditional hairstyle: hair plaited into multiple thin braids gathered at the back into a longer thick braid (kalpushya), decorated with simple silver-tone clips and small fabric tassels. Hair pulled back from a centre parting, traditional pheran-style framing",
+    "expected_silhouette": "long"
   },
   {
     "id": "sindhi_traditional",
@@ -1041,7 +1066,8 @@
       "traditional",
       "regional"
     ],
-    "prompt_template": "A Sindhi traditional hairstyle: hair plaited into a single long side braid resting over the right shoulder, decorated with a small ornamental clip at the top, hair pulled back from a side parting. Traditional Sindhi ghagra-choli styling implied, neat hairline"
+    "prompt_template": "A Sindhi traditional hairstyle: hair plaited into a single long side braid resting over the right shoulder, decorated with a small ornamental clip at the top, hair pulled back from a side parting. Traditional Sindhi ghagra-choli styling implied, neat hairline",
+    "expected_silhouette": "long"
   },
   {
     "id": "mehndi_loose_curls",
@@ -1077,7 +1103,8 @@
       "festive",
       "floral"
     ],
-    "prompt_template": "Mehndi function hairstyle: soft loose curls cascading over the shoulders, hair half-pulled-back with a small braid or twist on one side, decorated with fresh yellow marigold and white jasmine flowers tucked behind the ear. Romantic festive styling for the bride's mehndi ceremony"
+    "prompt_template": "Mehndi function hairstyle: soft loose curls cascading over the shoulders, hair half-pulled-back with a small braid or twist on one side, decorated with fresh yellow marigold and white jasmine flowers tucked behind the ear. Romantic festive styling for the bride's mehndi ceremony",
+    "expected_silhouette": "long"
   },
   {
     "id": "sangeet_side_braid",
@@ -1114,7 +1141,8 @@
       "festive",
       "modern"
     ],
-    "prompt_template": "Sangeet hairstyle: hair pulled to one side and plaited into a loose textured fishtail braid resting over the shoulder, with small face-framing tendrils left out near the temples and a few small flowers or pearl pins along the braid. Soft modern bridal styling for sangeet night"
+    "prompt_template": "Sangeet hairstyle: hair pulled to one side and plaited into a loose textured fishtail braid resting over the shoulder, with small face-framing tendrils left out near the temples and a few small flowers or pearl pins along the braid. Soft modern bridal styling for sangeet night",
+    "expected_silhouette": "long"
   },
   {
     "id": "reception_polished_updo",
@@ -1150,7 +1178,8 @@
       "elegant",
       "modern"
     ],
-    "prompt_template": "Reception hairstyle: hair pulled back from a side parting into a sleek polished low chignon at the nape of the neck, with a few face-framing strands left loose. Modern bridal reception look, elegant and minimal, paired with statement earrings"
+    "prompt_template": "Reception hairstyle: hair pulled back from a side parting into a sleek polished low chignon at the nape of the neck, with a few face-framing strands left loose. Modern bridal reception look, elegant and minimal, paired with statement earrings",
+    "expected_silhouette": "medium"
   },
   {
     "id": "punjabi_modern_taper",
@@ -1188,7 +1217,8 @@
       "modern",
       "structured"
     ],
-    "prompt_template": "A modern Punjabi men's taper cut: hair on top approximately 3-4 centimetres long, swept to one side from a clean side parting, with a sharp taper fade on the sides and back going from short on top to skin at the nape. Hairline edge-up sharp, modern barbershop styling. Pairs with a short beard"
+    "prompt_template": "A modern Punjabi men's taper cut: hair on top approximately 3-4 centimetres long, swept to one side from a clean side parting, with a sharp taper fade on the sides and back going from short on top to skin at the nape. Hairline edge-up sharp, modern barbershop styling. Pairs with a short beard",
+    "expected_silhouette": "short"
   },
   {
     "id": "kpop_inspired_fringe",
@@ -1223,7 +1253,8 @@
       "soft",
       "asymmetric"
     ],
-    "prompt_template": "A K-pop inspired men's haircut: medium-length hair on top approximately 6-8 centimetres, layered and slightly asymmetric, with a soft side-swept fringe falling forward and partly covering one eyebrow. Sides tapered short but not faded to skin. Soft modern Asian-inspired styling popular among young urban Indian men"
+    "prompt_template": "A K-pop inspired men's haircut: medium-length hair on top approximately 6-8 centimetres, layered and slightly asymmetric, with a soft side-swept fringe falling forward and partly covering one eyebrow. Sides tapered short but not faded to skin. Soft modern Asian-inspired styling popular among young urban Indian men",
+    "expected_silhouette": "short"
   },
   {
     "id": "south_indian_modern_fade",
@@ -1262,7 +1293,8 @@
       "structured",
       "indian"
     ],
-    "prompt_template": "A modern South Indian men's haircut: hair on top approximately 4-5 centimetres tall with natural volume, gently swept back from the forehead, with a mid-skin fade on the sides and back going from a defined horizontal line above the ear down to skin. Sharp clean hairline. Modern Chennai/Hyderabad/Bangalore barbershop styling"
+    "prompt_template": "A modern South Indian men's haircut: hair on top approximately 4-5 centimetres tall with natural volume, gently swept back from the forehead, with a mid-skin fade on the sides and back going from a defined horizontal line above the ear down to skin. Sharp clean hairline. Modern Chennai/Hyderabad/Bangalore barbershop styling",
+    "expected_silhouette": "short"
   },
   {
     "id": "indian_office_classic",
@@ -1296,7 +1328,8 @@
       "professional",
       "low-maintenance"
     ],
-    "prompt_template": "A classic Indian office-going men's haircut: hair on top approximately 3 centimetres long, neatly combed from a clean side parting to one side, sides and back trimmed short but not faded. Conservative professional styling, low maintenance, suitable for corporate offices across India. Hairline neat"
+    "prompt_template": "A classic Indian office-going men's haircut: hair on top approximately 3 centimetres long, neatly combed from a clean side parting to one side, sides and back trimmed short but not faded. Conservative professional styling, low maintenance, suitable for corporate offices across India. Hairline neat",
+    "expected_silhouette": "short"
   },
   {
     "id": "bollywood_blow_dry",
@@ -1333,7 +1366,8 @@
       "polished",
       "modern"
     ],
-    "prompt_template": "A polished Bollywood-style blow dry: long hair flowing past the shoulders with voluminous soft waves throughout, hair parted to one side and swept gently away from the face. Glossy, healthy, salon-fresh finish. Modern Indian celebrity styling popular for parties and red carpets"
+    "prompt_template": "A polished Bollywood-style blow dry: long hair flowing past the shoulders with voluminous soft waves throughout, hair parted to one side and swept gently away from the face. Glossy, healthy, salon-fresh finish. Modern Indian celebrity styling popular for parties and red carpets",
+    "expected_silhouette": "long"
   },
   {
     "id": "indian_high_pony",
@@ -1369,7 +1403,8 @@
       "modern",
       "polished"
     ],
-    "prompt_template": "A sleek high ponytail: hair pulled back tightly from the forehead and gathered into a high ponytail at the crown of the head, the ponytail falling smooth and straight down the back. Hairline visible and clean, no fringe, no flyaways. Modern Indian urban styling, professional or party-ready"
+    "prompt_template": "A sleek high ponytail: hair pulled back tightly from the forehead and gathered into a high ponytail at the crown of the head, the ponytail falling smooth and straight down the back. Hairline visible and clean, no fringe, no flyaways. Modern Indian urban styling, professional or party-ready",
+    "expected_silhouette": "long"
   },
   {
     "id": "layered_lob_with_curtain_bangs",
@@ -1405,6 +1440,7 @@
       "modern",
       "soft"
     ],
-    "prompt_template": "A layered long bob (lob): hair cut to just above the shoulders with subtle layers throughout for soft movement, paired with face-framing curtain bangs parted in the centre and sweeping outward toward the cheekbones. Modern Indian salon cut, popular for working women in their 20s-30s"
+    "prompt_template": "A layered long bob (lob): hair cut to just above the shoulders with subtle layers throughout for soft movement, paired with face-framing curtain bangs parted in the centre and sweeping outward toward the cheekbones. Modern Indian salon cut, popular for working women in their 20s-30s",
+    "expected_silhouette": "medium"
   }
 ]

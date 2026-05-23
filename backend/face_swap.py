@@ -1,4 +1,13 @@
-"""Replicate face-swap: the production identity step.
+"""DEPRECATED as of SP 11.
+
+Production is now `backend/inpaint_engine.py` (FLUX-Fill-Pro with hair
+mask).  This module is kept ONLY to support the legacy
+`kontext_engine.generate_preview` path that some tests still exercise.
+New code MUST NOT call swap_face.
+
+Original docstring follows:
+
+Replicate face-swap: the production identity step.
 
 After Kontext renders the styled image (right hair, body, background, but
 wrong face), we swap the customer's face onto it using a hosted face-swap
