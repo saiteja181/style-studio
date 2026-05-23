@@ -25,10 +25,17 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 CACHE_DIR = Path(__file__).resolve().parent.parent / "catalogue" / "validation_cache"
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"   # cheap + fast for QC
-MAX_TOKENS = 200
+# Phase 0.4: upgrade from Haiku 4.5 to Sonnet 4.6.  Haiku consistently
+# returned "pass" on outputs with visibly clumsy composite artifacts
+# (residual hair strands, paste halos, skin-tone mismatch).  Sonnet
+# costs ~3x more per call (~$0.015 vs $0.005) but actually catches
+# the artifacts that ship-or-not decisions depend on.
+DEFAULT_MODEL = "claude-sonnet-4-6"
+MAX_TOKENS = 250
 
-VALIDATOR_SYSTEM_VERSION = "v1"
+# Phase 0.3: added composite_clean criterion.  Bump version so cached
+# v1 verdicts don't get reused; old cache lacked this field.
+VALIDATOR_SYSTEM_VERSION = "v2"
 
 VALIDATOR_SYSTEM = """You are a strict QA reviewer for an AI hairstyle preview tool.
 
@@ -37,13 +44,20 @@ You will see THREE images:
 2. REFERENCE: the target hairstyle the customer wants.
 3. GENERATED: an AI-produced preview showing the customer with the target style.
 
-Your job is to decide: does the GENERATED image actually show the customer with the target hairstyle, while keeping their face identity intact?
+Your job is to decide: does the GENERATED image actually show the customer with the target hairstyle, AND is the composite clean enough to show a paying customer?
 
 Criteria:
 - FACE IDENTITY: the GENERATED face must clearly be the same person as SOURCE (same eye spacing, nose shape, jaw, chin, expression).
 - STYLE TRANSFER: the GENERATED hair must visibly resemble the target style from REFERENCE in its key structural features (length, texture, parting, fade, volume direction).
 - IT IS OK IF the GENERATED hair is a slightly modest version of the reference; not OK if it just looks like the customer's original hair barely changed.
 - SCENE PRESERVATION: clothes and background should still match SOURCE (not REFERENCE).
+- COMPOSITE CLEANLINESS: look CAREFULLY for visible artifacts on the GENERATED face area. These are deal-breakers regardless of identity:
+    * Residual dark hair strands or smudges on forehead / cheek that don't belong to the new hair style.
+    * Paste-edge halos at jawline or hairline (a visible "outline" where the face was inserted).
+    * Skin-tone mismatch between the face and surrounding neck / chest / shoulder.
+    * The face appearing brighter, darker, or differently lit than the rest of the image (looks "pasted on").
+    * Doubled or ghosted facial features (eyebrow appearing twice, etc).
+    * A forelock / lock of hair drawn across the customer's eye or face that shouldn't be there.
 
 Return ONLY a strict JSON object:
 {
@@ -51,10 +65,16 @@ Return ONLY a strict JSON object:
   "identity_match": "strong" | "weak" | "lost",
   "style_match": "strong" | "modest" | "missing",
   "scene_preserved": true | false,
-  "one_line_reason": "short sentence on what's right/wrong"
+  "composite_clean": "clean" | "minor_artifacts" | "obvious_artifacts",
+  "one_line_reason": "short sentence on what's right/wrong, naming the worst artifact if any"
 }
 
-PASS only if identity_match is "strong" AND style_match is at least "modest" AND scene_preserved is true. Otherwise FAIL.
+PASS only if ALL of:
+  - identity_match is "strong"
+  - style_match is at least "modest"
+  - scene_preserved is true
+  - composite_clean is "clean" or "minor_artifacts"
+Otherwise FAIL.
 
 Output ONLY the JSON. No preamble, no markdown."""
 
@@ -79,7 +99,12 @@ def validate_generation(
     cache_file = CACHE_DIR / f"{cache_key}.json"
     if use_cache and cache_file.exists():
         try:
-            return json.loads(cache_file.read_text(encoding="utf-8"))
+            cached = json.loads(cache_file.read_text(encoding="utf-8"))
+            # Mark cache hits so the caller can refund the cost reservation
+            # (the validator API call was not actually made).  Underscore-
+            # prefix so it doesn't conflict with validator JSON fields.
+            cached["_from_cache"] = True
+            return cached
         except Exception:
             pass
 
@@ -151,10 +176,16 @@ def validate_generation(
         # so the caller can decide (retry once, or surface a warning to the
         # salon staff).  Skip cache so a flaky single call doesn't poison
         # future lookups.
+        # All sub-fields go to "unknown" / None to make it impossible for
+        # downstream code to silently treat an uncertain verdict as a
+        # clean pass.  Callers must inspect the verdict string, not the
+        # individual fields.
         return {
             "verdict": "uncertain",
-            "identity_match": "unknown", "style_match": "unknown",
-            "scene_preserved": True,
+            "identity_match": "unknown",
+            "style_match": "unknown",
+            "scene_preserved": None,
+            "composite_clean": "unknown",
             "one_line_reason": f"could not parse validator output: {raw[:100]}",
         }
 

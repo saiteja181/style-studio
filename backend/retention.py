@@ -71,16 +71,29 @@ def sweep_once(directory: Path, ttl_minutes: int, now: float = None) -> int:
     return deleted
 
 
-async def _sweep_loop(directory: Path, interval_s: int = SWEEP_INTERVAL_S) -> None:
-    """Forever: sweep, sleep, repeat.  Logs one line per sweep cycle."""
+async def _sweep_loop(
+    directory: Path, interval_s: int = SWEEP_INTERVAL_S,
+    extra_dirs: tuple = (),
+) -> None:
+    """Forever: sweep, sleep, repeat.  Logs one line per sweep cycle.
+
+    extra_dirs: additional directories that also contain customer-face
+    PNGs and need the same data-minimisation TTL applied.  Currently
+    used for the preview cache (catalogue/preview_cache) added in
+    Phase 5.1 - those PNGs contain composited customer faces and must
+    follow the same DPDPA retention rules as uploads/.
+    """
     while True:
         try:
             ttl = _ttl_minutes()
             if ttl > 0:
-                deleted = sweep_once(directory, ttl)
-                if deleted:
-                    logger.info("retention: deleted %d expired uploads from %s",
-                                deleted, directory)
+                for d in (directory, *extra_dirs):
+                    deleted = sweep_once(d, ttl)
+                    if deleted:
+                        logger.info(
+                            "retention: deleted %d expired files from %s",
+                            deleted, d,
+                        )
         except asyncio.CancelledError:
             raise
         except Exception as e:
@@ -89,23 +102,25 @@ async def _sweep_loop(directory: Path, interval_s: int = SWEEP_INTERVAL_S) -> No
 
 
 @asynccontextmanager
-async def lifespan_with_sweeper(directory: Path, app=None):
+async def lifespan_with_sweeper(directory: Path, app=None, extra_dirs: tuple = ()):
     """FastAPI lifespan handler that runs the sweep loop in the background.
     Logs the TTL setting on startup so operators see retention behaviour.
     Yields control to FastAPI's request loop; cancels the sweep task on
     shutdown.
 
     Usage in main.py:
-        app = FastAPI(..., lifespan=lambda app: lifespan_with_sweeper(UPLOADS_DIR, app))
+        app = FastAPI(..., lifespan=lambda app: lifespan_with_sweeper(
+            UPLOADS_DIR, app, extra_dirs=(PREVIEW_CACHE_DIR,)))
     """
     ttl = _ttl_minutes()
+    all_dirs = (directory, *extra_dirs)
     if ttl == 0:
         logger.info("retention: DISABLED (STYLE_STUDIO_UPLOAD_TTL_MIN=0)")
         task = None
     else:
         logger.info("retention: sweeping %s every %ds, TTL=%dm",
-                    directory, SWEEP_INTERVAL_S, ttl)
-        task = asyncio.create_task(_sweep_loop(directory))
+                    [str(p) for p in all_dirs], SWEEP_INTERVAL_S, ttl)
+        task = asyncio.create_task(_sweep_loop(directory, extra_dirs=extra_dirs))
     try:
         yield
     finally:

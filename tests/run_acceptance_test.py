@@ -36,16 +36,11 @@ OUT = PROJECT_ROOT / "tests" / "acceptance"
 SELFIES = PROJECT_ROOT / "tests" / "selfies"
 
 CASES = [
+    # SP 9.6 retest: just 2 sources to keep credit spend down.
+    # Sikh man: skin filter still fires (head_covering_type='turban' detected).
+    # Curly woman: skin filter NOW OFF (no covering), so face should stop drifting.
     ("man",   SELFIES / "young_indian_man.jpg",
-     "Young Indian man",
-     ["mens_pompadour", "mens_korean_fringe", "mens_textured_crop",
-      "mens_classic_side_part", "mens_buzz_cut"]),
-    ("woman", SELFIES / "young_indian_woman.jpg",
-     "Young Indian woman",
-     ["indian_braid_long", "bridal_juda", "curtain_bangs_medium",
-      "modern_chin_bob", "side_swept_layers"]),
-    ("round", SELFIES / "round_face_indian_man.jpg",
-     "Round-face Indian man",
+     "Young Indian man (Sikh, turban)",
      ["mens_pompadour", "mens_korean_fringe", "mens_textured_crop",
       "mens_classic_side_part", "mens_buzz_cut"]),
     ("curly", SELFIES / "curly_hair_indian_woman.jpg",

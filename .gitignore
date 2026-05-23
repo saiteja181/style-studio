@@ -10,6 +10,8 @@ generated/
 tests/selfies/*.jpg
 tests/selfies/*.jpeg
 tests/selfies/*.png
+tests/selfies/sp_test/
+tests/score_demo/
 tests/debug_out/
 tests/uploads/
 tests/online_corpus/
@@ -20,6 +22,8 @@ catalogue/captions_cache/
 catalogue/consults_cache/
 catalogue/customer_cache/
 catalogue/validation_cache/
+catalogue/head_covering_cache/
+catalogue/preview_cache/
 !tests/selfies/.gitkeep
 !frontend/**/*.png
 .DS_Store

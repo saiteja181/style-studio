@@ -11,7 +11,7 @@ from typing import Optional
 
 import numpy as np
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
@@ -21,7 +21,31 @@ from backend.face_analysis import analyze_face
 from backend.customer_analysis import analyze_customer, AnalysisError
 from backend.style_matcher import recommend_styles
 from backend.input_pipeline import prepare_upload, PreflightError, PreflightReport
-from backend.kontext_engine import generate_preview, GenerationError, StyleNotFoundError
+from backend.kontext_engine import (
+    generate_preview, GenerationError, StyleNotFoundError, CostCapExceeded,
+    CostLedger,
+)
+
+# Per-customer session ledgers so hair and beard previews share the same
+# budget cap (rather than each route getting its own private $0.50).
+# Keyed by salon-supplied X-Session-Id header.  In-memory only - this is
+# fine for the single-instance salon deployment; a multi-instance setup
+# would need to back this with Redis or similar.  Tests with no header
+# get an ephemeral ledger (current per-call behaviour).
+_SESSION_LEDGERS: dict[str, CostLedger] = {}
+
+
+def _ledger_for(session_id: Optional[str]) -> CostLedger:
+    """Look up or create a CostLedger for this session.  Without a
+    session id, return a fresh ledger so unauthenticated test traffic
+    still works (just without cross-call cap)."""
+    if not session_id:
+        return CostLedger()
+    ledger = _SESSION_LEDGERS.get(session_id)
+    if ledger is None:
+        ledger = CostLedger()
+        _SESSION_LEDGERS[session_id] = ledger
+    return ledger
 from backend.retention import lifespan_with_sweeper
 
 load_dotenv()
@@ -39,11 +63,20 @@ FRONTEND_DIR = PROJECT_ROOT / "frontend"
 UPLOADS_DIR = PROJECT_ROOT / "tests" / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
+# Phase 5.1 + DPDPA fix: the preview cache also holds composited customer
+# faces, so it must follow the same retention TTL as uploads/.  Without
+# this, cached previews would accumulate forever and violate the same
+# data-minimisation rule retention.py was built to enforce.
+from backend.kontext_engine import PREVIEW_CACHE_DIR
+PREVIEW_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
 app = FastAPI(
     title="Style Studio API",
     version="0.3.1",
     description="Indian hairstyle consultation + preview generation for salons.",
-    lifespan=lambda app: lifespan_with_sweeper(UPLOADS_DIR, app),
+    lifespan=lambda app: lifespan_with_sweeper(
+        UPLOADS_DIR, app, extra_dirs=(PREVIEW_CACHE_DIR,),
+    ),
 )
 
 app.add_middleware(
@@ -202,10 +235,14 @@ async def generate(
     image: UploadFile = File(...),
     style_id: str = Form(...),
     seed: Optional[int] = Form(42),
+    x_session_id: Optional[str] = Header(default=None),
 ) -> dict:
     """Generate a single hairstyle preview using FLUX Kontext.
 
     Returns PreviewResult.to_dict() shape (see backend.kontext_engine).
+
+    Pass an X-Session-Id header to share the per-customer cost cap
+    across multiple calls (hair + beard + retries) on this session.
     """
     _validate_image_upload(image)
     saved_path, report = await _save_upload(image)
@@ -226,9 +263,16 @@ async def generate(
             customer_profile=profile,
             seed=seed if seed is not None else 42,
             head_covering_type=head_covering_type,
+            glasses_detected=getattr(report, "glasses_detected", False),
+            cost_ledger=_ledger_for(x_session_id),
         )
     except StyleNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except CostCapExceeded as e:
+        # 429: customer hit the per-session policy cap.  Surfaces as a
+        # distinct status to the salon-staff UI so they show "budget
+        # cap reached" instead of "backend error".
+        raise HTTPException(status_code=429, detail=str(e))
     except GenerationError as e:
         raise HTTPException(status_code=502, detail=str(e))
     return result.to_dict()
@@ -239,10 +283,15 @@ async def generate_beard(
     image: UploadFile = File(...),
     beard_style_id: str = Form(...),
     seed: Optional[int] = Form(42),
+    x_session_id: Optional[str] = Header(default=None),
 ) -> dict:
     """Generate a beard-only preview using FLUX Kontext.
 
     Returns PreviewResult.to_dict() shape, same as /generate.
+
+    Pass an X-Session-Id header so this preview's spend is charged
+    against the same per-customer cap as any hair previews on the
+    same session.
     """
     from backend.beard_engine import generate_beard_preview, BeardStyleNotFoundError
 
@@ -265,9 +314,12 @@ async def generate_beard(
             customer_profile=profile,
             seed=seed if seed is not None else 42,
             head_covering_type=head_covering_type,
+            cost_ledger=_ledger_for(x_session_id),
         )
     except BeardStyleNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except CostCapExceeded as e:
+        raise HTTPException(status_code=429, detail=str(e))
     except GenerationError as e:
         raise HTTPException(status_code=502, detail=str(e))
     return result.to_dict()

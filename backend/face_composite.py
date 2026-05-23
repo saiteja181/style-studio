@@ -12,7 +12,7 @@ import logging
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 import cv2
 import mediapipe as mp
@@ -173,6 +173,159 @@ def _build_skin_only_mask(
     return cv2.GaussianBlur(combined, (9, 9), 0)
 
 
+# MediaPipe landmarks that sit ON the brow line of the face polygon's top
+# edge (refine_landmarks=True canonical map).  These are the canonical
+# "preserved row" landmarks - they live inside the polygon at the brow
+# line, so the head-covering shrink must never push past them or the
+# brow row gets re-rendered by Kontext.
+BROW_LANDMARK_INDICES = [332, 297, 9, 67, 109, 103, 54]
+
+# Anchor landmarks for the source->Kontext similarity transform.  Eye centres
+# + chin gives a stable triangle that captures rotation, scale, and
+# translation without being thrown off by mouth or expression changes.
+ALIGNMENT_ANCHOR_INDICES = [33, 263, 152]  # left eye, right eye, chin
+
+
+def _detect_face_landmarks(rgb_image: np.ndarray) -> Optional[np.ndarray]:
+    """Return MediaPipe FaceMesh landmarks as an (N, 2) int-pixel array, or
+    None if no face is found.  Wraps the boilerplate context manager so
+    callers do not duplicate it."""
+    h, w = rgb_image.shape[:2]
+    with _mp_face_mesh.FaceMesh(
+        static_image_mode=True, max_num_faces=1,
+        refine_landmarks=True, min_detection_confidence=0.5,
+    ) as fm:
+        result = fm.process(rgb_image)
+    if not result.multi_face_landmarks:
+        return None
+    lm = result.multi_face_landmarks[0].landmark
+    return np.array([(p.x * w, p.y * h) for p in lm], dtype=np.float32)
+
+
+def _alignment_transform(
+    source_landmarks: np.ndarray, kontext_landmarks: np.ndarray,
+) -> Optional[np.ndarray]:
+    """Compute a 2x3 similarity (rotation+scale+translation) matrix that
+    maps source-image coordinates onto Kontext-image coordinates, using
+    eye centres + chin as anchors.
+
+    Returns None if cv2 cannot fit a transform, or if the fit is wildly
+    out of range (>25 % scale change or >20 degrees rotation - those
+    almost certainly mean MediaPipe locked onto a different feature on
+    one side, and applying the transform would smear the face)."""
+    src_pts = source_landmarks[ALIGNMENT_ANCHOR_INDICES].astype(np.float32)
+    dst_pts = kontext_landmarks[ALIGNMENT_ANCHOR_INDICES].astype(np.float32)
+    M, _inliers = cv2.estimateAffinePartial2D(src_pts, dst_pts)
+    if M is None:
+        return None
+    scale = float(np.sqrt(M[0, 0] ** 2 + M[0, 1] ** 2))
+    if not 0.80 <= scale <= 1.25:
+        return None
+    rot_deg = float(np.degrees(np.arctan2(M[1, 0], M[0, 0])))
+    if abs(rot_deg) > 20.0:
+        return None
+    return M
+
+
+def _exclude_hair_bleed(
+    source_rgb: np.ndarray, face_alpha: np.ndarray,
+) -> np.ndarray:
+    """Zero alpha for in-polygon pixels that belong to a HAIR connected
+    component that ALSO touches outside the polygon.  Targets source hair
+    strands that fall forward over forehead/cheek - they're connected to
+    the head hair outside the polygon, so the component spans both.
+
+    "Hair" = dark AND low-chroma (grayscale).  This separator is what lets
+    the filter run safely on dark-skinned faces in moody lighting: shadow
+    skin stays DARK but keeps its reddish chroma (a > 130 in OpenCV Lab),
+    while hair is dark AND near-neutral (a, b within 25 of 128).  Eyebrows,
+    eyelashes, lips, nostrils stay protected: they're isolated dark
+    components fully surrounded by skin, with no path to outside-polygon
+    hair via the hair connected-component.
+
+    Run only when there is NO head covering.  With a head covering the
+    skin filter already handles fabric exclusion via Lab distance, and
+    flood-filling from the turban fabric would zero too much."""
+    lab = cv2.cvtColor(source_rgb, cv2.COLOR_RGB2LAB)
+    l = lab[:, :, 0].astype(np.int32)
+    a = lab[:, :, 1].astype(np.int32)
+    b = lab[:, :, 2].astype(np.int32)
+    chroma_sq = (a - 128) ** 2 + (b - 128) ** 2
+    hair_pixel = ((l < 60) & (chroma_sq < 25 * 25)).astype(np.uint8)
+    # Close gaps in the hair mask: curly hair has reflective highlights
+    # that interrupt the dark-pixel connectivity, so a forehead strand
+    # ends up as a separate component from the head hair behind it.
+    # MORPH_CLOSE with a kernel scaled to image height (~0.5% of h)
+    # bridges those mm-scale gaps without merging eyebrows into hair.
+    h_img = source_rgb.shape[0]
+    close_k = max(7, (int(h_img * 0.005) // 2) * 2 + 1)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (close_k, close_k))
+    hair_pixel = cv2.morphologyEx(hair_pixel, cv2.MORPH_CLOSE, kernel)
+    if int(hair_pixel.sum()) < 50:
+        return face_alpha
+    num_labels, labels = cv2.connectedComponents(hair_pixel, connectivity=8)
+    if num_labels <= 1:
+        return face_alpha
+
+    inside_poly = face_alpha > 16
+    # Per-component outside-polygon footprint.  A component must have
+    # at least 200 pixels OUTSIDE the polygon (not just bordering it)
+    # to count as hair-from-outside; this rules out eyebrow components
+    # whose outer tip just brushes the polygon edge.
+    outside_poly = ~inside_poly
+    outside_hair_labels = labels[hair_pixel.astype(bool) & outside_poly]
+    if outside_hair_labels.size == 0:
+        return face_alpha
+    counts = np.bincount(outside_hair_labels, minlength=num_labels)
+    bleed_labels = np.where(counts >= 200)[0]
+    bleed_labels = bleed_labels[bleed_labels != 0]
+    if bleed_labels.size == 0:
+        return face_alpha
+    bleed_mask = np.isin(labels, bleed_labels) & inside_poly
+    if not bleed_mask.any():
+        return face_alpha
+
+    # Erode the bleed_mask very slightly so the alpha-edge transition at
+    # the polygon boundary is unaffected (we only want to zero pixels
+    # CLEARLY inside the polygon, not the natural feathered edge).
+    new_alpha = face_alpha.copy()
+    new_alpha[bleed_mask] = 0
+    return cv2.GaussianBlur(new_alpha, (9, 9), 0)
+
+
+def _match_face_lab_mean(
+    source_rgb: np.ndarray,
+    kontext_rgb: np.ndarray,
+    face_alpha: np.ndarray,
+    max_l_shift: float = 25.0,
+    max_ab_shift: float = 8.0,
+) -> np.ndarray:
+    """Shift source RGB so the mean Lab of pixels inside the face mask
+    matches the mean Lab of the SAME mask region on the Kontext output.
+    Eliminates the 'pasted face has different lighting than the rest of
+    the picture' halo.
+
+    The shift is capped so we never drift the source face so far that
+    identity colour (skin tone, eye colour) is lost.  Cap is in OpenCV
+    Lab units: L is 0-255 (~2.55 per L* unit), a and b are 0-255 offset
+    from 128.  A 25-unit L shift is roughly 10 L* - enough to align
+    indoor vs daylight white balance, not enough to whitewash the skin.
+    """
+    binary = face_alpha > 64
+    if int(binary.sum()) < 100:
+        return source_rgb
+    source_lab = cv2.cvtColor(source_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    kontext_lab = cv2.cvtColor(kontext_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    src_mean = source_lab[binary].mean(axis=0)
+    kn_mean = kontext_lab[binary].mean(axis=0)
+    delta = kn_mean - src_mean
+    delta[0] = float(np.clip(delta[0], -max_l_shift, max_l_shift))
+    delta[1] = float(np.clip(delta[1], -max_ab_shift, max_ab_shift))
+    delta[2] = float(np.clip(delta[2], -max_ab_shift, max_ab_shift))
+    shifted = np.clip(source_lab + delta, 0, 255).astype(np.uint8)
+    return cv2.cvtColor(shifted, cv2.COLOR_LAB2RGB)
+
+
 def paste_source_face(
     source_path: Path,
     kontext_output_url_or_path: Union[str, Path],
@@ -222,22 +375,42 @@ def paste_source_face(
         )
 
     polygon = UPPER_FACE_POLYGON_INDICES if mode == "beard" else FACE_POLYGON_INDICES
-    face_alpha = _build_face_alpha(
-        source_rgb, feather_px=feather_px, polygon_indices=polygon,
+    # Skin-similarity filter is only useful when the source has a head
+    # covering (turban/hijab/cap) whose fabric falls inside the geometric
+    # polygon.  On normal portraits the filter over-rejects legitimate
+    # face skin under uneven lighting / 3-4 profile poses, causing Kontext
+    # to bleed through and produce face drift.  So gate the filter on
+    # head_covering_type detection.
+    head_covering_detected = head_covering_type in (
+        "turban", "hijab", "ghoonghat", "cap_hat", "other",
     )
-    if face_alpha is None:
+    alpha_result = _build_face_alpha(
+        source_rgb, feather_px=feather_px, polygon_indices=polygon,
+        apply_skin_filter=head_covering_detected,
+    )
+    if alpha_result is None:
         logger.warning(
             "face_composite: no face detected in source; returning raw Kontext"
         )
         return _save_png(kontext_rgb, output_dir, prefix="kontext_only_")
+    face_alpha = alpha_result[0]
+    source_landmarks = alpha_result[1]
+
+    # NOTE: _exclude_hair_bleed was tried here in earlier iterations but it
+    # mis-classifies dark-skin-in-shadow as "hair" (skin shadow is dark AND
+    # low-chroma, same signature as actual hair).  On dark-skinned customers
+    # in moody lighting it zeroes most of the face polygon, producing
+    # mottled outputs.  The Replicate face-swap path in
+    # kontext_engine.generate_preview is the right fix for source hair
+    # strands; the polygon paste remains a last-resort fallback that
+    # cannot solve strand bleed without a proper segmentation model.
 
     # When the source has a head covering, shrink the upper boundary of the
     # preserved face region so any covering fabric inside the geometric
     # polygon (turban temples, hijab edges, cap brim) does NOT get composited
     # back over the Kontext output.  Combined with the skin-only filter,
     # this gives belt-and-braces protection against fabric-bleed.
-    if head_covering_type in ("turban", "hijab", "ghoonghat", "cap_hat", "other") \
-            and face_alpha is not None:
+    if head_covering_detected:
         h_img, w_img = face_alpha.shape
         rows_with_mask = np.where(face_alpha.max(axis=1) > 16)[0]
         if rows_with_mask.size > 0:
@@ -245,27 +418,49 @@ def paste_source_face(
             bottom_y = int(rows_with_mask[-1])
             face_h = max(1, bottom_y - top_y)
             shrink_px = int(face_h * 0.12)
-            # Per-column polygon-aware shrink: for each column, find its
-            # topmost mask row and zero shrink_px rows starting from that
-            # row downward.  Columns whose topmost row is already deeper
-            # (e.g. side temples) get little or no shrink, so we don't
-            # eat forehead skin where the polygon is already low.
-            # Vectorised: build a (h_img,) row index array, then a (h_img,
-            # w_img) "is this row within shrink_px of the column's top?"
-            # mask, then zero those positions.
+            # Cap the shrink well above the topmost eyebrow landmark so the
+            # 15x15 Gaussian blur applied to the shrunk mask does not bleed
+            # the zero band down into the eyebrow row.  Kernel half-width is
+            # ~7 px; 12 px safety leaves a comfortable buffer.  Without this
+            # cap, low-set brows on a tall-turban shot lose their eyebrow
+            # row to the shrink and Kontext's eyebrow shape leaks back.
+            brow_y_top = int(source_landmarks[BROW_LANDMARK_INDICES, 1].min())
+            shrink_floor = max(0, brow_y_top - 12)
             mask_bool = face_alpha > 16
-            # col_top: topmost row per column (h_img if column has no mask)
-            row_indices = np.arange(h_img)[:, None]              # (h_img, 1)
+            row_indices = np.arange(h_img)[:, None]
             inf_for_empty = np.where(mask_bool, row_indices, h_img)
-            col_top = inf_for_empty.min(axis=0)                  # (w_img,)
-            # For each pixel, true if row in [col_top, col_top + shrink_px)
+            col_top = inf_for_empty.min(axis=0)
+            shrink_top_plus_px = np.minimum(col_top + shrink_px, shrink_floor)
             in_shrink_band = (
                 (row_indices >= col_top[None, :])
-                & (row_indices < (col_top + shrink_px)[None, :])
+                & (row_indices < shrink_top_plus_px[None, :])
             )
             shrunk = face_alpha.copy()
             shrunk[in_shrink_band] = 0
             face_alpha = cv2.GaussianBlur(shrunk, (15, 15), 0)
+
+    # Pose-aware alignment + Lab colour match: only run when Kontext actually
+    # produced a face we can detect.  This guards the unit-test path (where
+    # the synthetic Kontext fill is a solid colour with no face) and the
+    # rare production case where Kontext returns garbage.
+    kontext_landmarks = _detect_face_landmarks(kontext_rgb)
+    if kontext_landmarks is not None and len(kontext_landmarks) > max(ALIGNMENT_ANCHOR_INDICES):
+        M = _alignment_transform(source_landmarks, kontext_landmarks)
+        if M is not None:
+            h_img, w_img = source_rgb.shape[:2]
+            source_rgb = cv2.warpAffine(
+                source_rgb, M, (w_img, h_img),
+                flags=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_REPLICATE,
+            )
+            face_alpha = cv2.warpAffine(
+                face_alpha, M, (w_img, h_img),
+                flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT,
+                borderValue=0,
+            )
+        # Colour-match the source to Kontext WITHIN the face mask.  Runs
+        # whether or not the alignment transform succeeded, because even
+        # without a warp the lighting mismatch dominates the seam.
+        source_rgb = _match_face_lab_mean(source_rgb, kontext_rgb, face_alpha)
 
     alpha = (face_alpha.astype(np.float32) / 255.0)[..., None]
     composed = (
@@ -279,27 +474,29 @@ def paste_source_face(
 def _build_face_alpha(
     image_rgb: np.ndarray, feather_px: int,
     polygon_indices: list = None,
-) -> Optional[np.ndarray]:
-    """Build a feathered alpha mask covering the face polygon, then AND it
-    with a skin-similarity filter so non-skin pixels inside the polygon
-    (turban fabric, dark hair, background bleed) are excluded.
+    apply_skin_filter: bool = False,
+) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+    """Build a feathered alpha mask covering the face polygon, plus return
+    the (N, 2) landmarks array for downstream use (brow-aware shrink,
+    pose alignment).
 
-    Returns None if MediaPipe finds no face in the image.
+    When apply_skin_filter=True, additionally AND the polygon with a
+    Lab-space skin-similarity filter so non-skin pixels inside the polygon
+    (turban fabric, dark hair, background bleed) get excluded.  This costs
+    identity preservation under uneven lighting and 3-4 profile poses, so
+    callers should only set True when the source actually has a head
+    covering that needs filtering out.
+
+    Returns (alpha, landmarks) tuple, or None if MediaPipe finds no face.
     """
     h, w = image_rgb.shape[:2]
-    with _mp_face_mesh.FaceMesh(
-        static_image_mode=True, max_num_faces=1,
-        refine_landmarks=True, min_detection_confidence=0.5,
-    ) as fm:
-        result = fm.process(image_rgb)
-    if not result.multi_face_landmarks:
+    landmarks_xy = _detect_face_landmarks(image_rgb)
+    if landmarks_xy is None:
         return None
-    landmarks = result.multi_face_landmarks[0].landmark
     poly_indices = polygon_indices or FACE_POLYGON_INDICES
-    if len(landmarks) <= max(poly_indices):
+    if len(landmarks_xy) <= max(poly_indices):
         return None
 
-    landmarks_xy = np.array([(lm.x * w, lm.y * h) for lm in landmarks])
     poly = landmarks_xy[poly_indices].astype(np.int32)
     poly[:, 0] = np.clip(poly[:, 0], 0, w - 1)
     poly[:, 1] = np.clip(poly[:, 1], 0, h - 1)
@@ -310,7 +507,9 @@ def _build_face_alpha(
         k = max(3, feather_px * 2 + 1)
         geometric_mask = cv2.GaussianBlur(geometric_mask, (k, k), 0)
 
-    return _build_skin_only_mask(image_rgb, geometric_mask, landmarks_xy)
+    if not apply_skin_filter:
+        return geometric_mask, landmarks_xy
+    return _build_skin_only_mask(image_rgb, geometric_mask, landmarks_xy), landmarks_xy
 
 
 def _load_rgb(src: Union[str, Path]) -> np.ndarray:

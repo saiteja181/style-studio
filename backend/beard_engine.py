@@ -21,6 +21,7 @@ from typing import Optional
 
 from backend.kontext_engine import (
     PreviewResult, GenerationError, _call_kontext,
+    CostLedger, COST_USD_KONTEXT,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ def generate_beard_preview(
     seed: int = 42,
     max_retries: int = 1,
     head_covering_type: Optional[str] = None,
+    cost_ledger: Optional[CostLedger] = None,
 ) -> PreviewResult:
     """Run a beard-only preview through FLUX Kontext.
 
@@ -52,6 +54,9 @@ def generate_beard_preview(
             (turban / hijab / ghoonghat / cap_hat / other).  Threaded into
             face_composite so the upper polygon is shrunk and fabric does
             not bleed back over the Kontext output.
+        cost_ledger: optional shared CostLedger so beard previews respect
+            the same per-customer budget as hair previews.  If None,
+            a fresh ledger is created (default cap from env).
     """
     style = _load_beard_style(beard_style_id)
     if style is None:
@@ -63,6 +68,8 @@ def generate_beard_preview(
         os.getenv("STYLE_STUDIO_UPLOADS_DIR")
         or (Path(__file__).resolve().parent.parent / "tests" / "uploads")
     )
+    if cost_ledger is None:
+        cost_ledger = CostLedger()
 
     base = style.get("prompt_template") or style.get("name", "")
     prompt = (
@@ -81,6 +88,10 @@ def generate_beard_preview(
 
     for attempt_idx in range(max_retries + 1):
         attempt_seed = seed if attempt_idx == 0 else seed + 1000 + attempt_idx
+        # Same label as the hair pipeline so a shared ledger doesn't
+        # produce two separate breakdown rows for what is really the
+        # same Replicate model at the same price.
+        cost_ledger.check_and_charge("kontext", COST_USD_KONTEXT)
         raw_url = _call_kontext(source_path, prompt, attempt_seed)
         composited = paste_source_face(
             source_path=source_path,

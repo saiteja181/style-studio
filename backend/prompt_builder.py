@@ -7,7 +7,9 @@ Layers (lightest to heaviest):
      style has a reference photo on disk.  Reuses backend.expert_consult.
   3. Customer hair-colour hex anchor (no bleach / no colour drift).
   4. Texture contrast clause when source texture disagrees with target.
-  5. Kontext "Change ONLY the hairstyle to:" wrapper + identity-preservation
+  5. Per-style negative-feature clause (P1.1: stronger anti-forelock for
+     short male cuts where Kontext keeps drawing a strand across the eye).
+  6. Kontext "Change ONLY the hairstyle to:" wrapper + identity-preservation
      clause.
 """
 from __future__ import annotations
@@ -19,14 +21,27 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# Forelock-suppression membership is now CATALOG-DRIVEN via the
+# per-style `suppress_forelock: true` field in catalogue/styles.json.
+# Editors can flag a new style without code changes.  This fixes the
+# overfitting risk where adding `mens_caesar` would have silently
+# missed the suppression unless the developer remembered to edit two
+# files (here AND the catalog upsampling flag).
+
 
 def build_edit_prompt(
     style: dict,
     customer_profile: dict,
     source_path: Path,
     reference_path: Optional[Path],
+    glasses_detected: bool = False,
 ) -> str:
-    """Compose the full Kontext prompt.  See module docstring for layers."""
+    """Compose the full Kontext prompt.  See module docstring for layers.
+
+    glasses_detected: when True, prepend a stronger preservation clause
+    so Kontext does not remove the customer's glasses when restyling
+    the hair around them.  Detected by input_pipeline._detect_glasses.
+    """
     base = style.get("prompt_template")
     if not base:
         base = _default_from_style(style)
@@ -44,8 +59,14 @@ def build_edit_prompt(
 
     colour = _colour_clause(customer_profile)
     texture = _texture_contrast_clause(style, customer_profile)
+    forelock = _forelock_clause(style)
+    glasses = (
+        " The customer is wearing GLASSES; preserve the glasses exactly "
+        "as in the source, do not remove them, do not change frame shape "
+        "or colour."
+    ) if glasses_detected else ""
     return (
-        f"Change ONLY the hairstyle to: {base}.{colour}{texture} "
+        f"Change ONLY the hairstyle to: {base}.{colour}{texture}{forelock}{glasses} "
         "This is a complete hairstyle change. The new hair must look "
         "visibly different from the source hair in shape, length, or styling "
         "- do not preserve the original silhouette. "
@@ -56,6 +77,22 @@ def build_edit_prompt(
         "clothing, hands, and background exactly identical to the original "
         "photo - do not change anything below the eyebrows. Photoreal, same "
         "ambient indoor lighting as the source, no studio lighting, no halo."
+    )
+
+
+def _forelock_clause(style: dict) -> str:
+    """Stronger per-style anti-forelock clause for styles where Kontext
+    has been observed to insert an unwanted dramatic forelock falling
+    across the eye, despite the global anti-forelock language in the
+    base prompt.  Triggered by catalog field `suppress_forelock: true`
+    so new styles inherit the fix without code edits."""
+    if not style.get("suppress_forelock"):
+        return ""
+    return (
+        " The forehead is FULLY VISIBLE and CLEAR. The hair stays "
+        "ABOVE the eyebrows on all sides. No hair lock, no fringe, "
+        "no strand, no curl crosses the eye, brow, or cheek. The "
+        "hairline ends cleanly at the temples."
     )
 
 

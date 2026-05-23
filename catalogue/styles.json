@@ -4,222 +4,490 @@
     "name": "Modern Pompadour with Skin Fade",
     "gender": "male",
     "reference_image_path": "ref3_polished.jpg",
-    "suits_face": ["oval", "round", "square"],
-    "avoid_for": ["long", "heart"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "oval",
+      "round",
+      "square"
+    ],
+    "avoid_for": [
+      "long",
+      "heart"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "medium",
-    "occasion": ["daily", "party", "professional"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "party",
+      "professional"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "high",
     "popularity_boost": 5,
-    "style_traits": ["pompadour", "fade", "structured", "height on top", "swept up", "undercut"],
+    "style_traits": [
+      "pompadour",
+      "fade",
+      "structured",
+      "height on top",
+      "swept up",
+      "undercut"
+    ],
     "prompt_template": "A bold modern pompadour: hair on top stands 6-8 centimetres TALL with dramatic VERTICAL VOLUME, sweeping up and back from the forehead in a single high wave - the silhouette must look noticeably TALLER on top than the source. Razor-sharp skin fade on the sides and back, hair clipped to near-zero on the temples and around the ears, crisp horizontal fade line above the ear. Pronounced undercut. Hairline sharp and defined. Heavy structured shape, polished and styled with product. The source hair must be fully restructured into this shape, not just lightly edited",
     "mask_params": {
       "offset_ratio": -0.02,
-      "extend_ratio": 1.20,
-      "lateral_extend": 0.10,
-      "ear_level_ratio": 0.70,
+      "extend_ratio": 1.2,
+      "lateral_extend": 0.1,
+      "ear_level_ratio": 0.7,
       "feather_frac": 0.018
     },
     "guidance": 70.0,
-    "upsampling": false
+    "upsampling": false,
+    "suppress_forelock": true
   },
   {
     "id": "mens_voluminous_top",
     "name": "Voluminous Top with Taper",
     "gender": "male",
     "reference_image_path": "ref4_distinguished.jpg",
-    "suits_face": ["oval", "round", "square"],
-    "avoid_for": ["long"],
-    "compat_texture": ["straight", "wavy", "coiled"],
+    "suits_face": [
+      "oval",
+      "round",
+      "square"
+    ],
+    "avoid_for": [
+      "long"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "coiled"
+    ],
     "length": "medium",
-    "occasion": ["daily", "party", "professional"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "party",
+      "professional"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
     "quality_tier": "high",
-    "style_traits": ["height on top", "taper", "textured", "voluminous", "modern"]
+    "style_traits": [
+      "height on top",
+      "taper",
+      "textured",
+      "voluminous",
+      "modern"
+    ]
   },
   {
     "id": "mens_long_swept_back",
     "name": "Long Swept-Back",
     "gender": "male",
     "reference_image_path": "ref5_profile_clean.jpg",
-    "suits_face": ["oval", "long", "square"],
-    "avoid_for": ["round", "heart"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "oval",
+      "long",
+      "square"
+    ],
+    "avoid_for": [
+      "round",
+      "heart"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "long",
-    "occasion": ["daily", "party"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "party"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "medium",
     "popularity_boost": 3,
     "quality_tier": "limited",
-    "style_traits": ["swept up", "long swept-back", "voluminous", "modern", "side-part"]
+    "style_traits": [
+      "swept up",
+      "long swept-back",
+      "voluminous",
+      "modern",
+      "side-part"
+    ]
   },
   {
     "id": "mens_korean_fringe",
     "name": "Modern Korean Fringe",
     "gender": "male",
     "reference_image_path": "ref2_clean_cut.jpg",
-    "suits_face": ["oval", "square", "heart"],
-    "avoid_for": ["round"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "oval",
+      "square",
+      "heart"
+    ],
+    "avoid_for": [
+      "round"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "medium",
-    "occasion": ["daily", "party"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "party"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "medium",
     "popularity_boost": 4,
     "quality_tier": "medium",
-    "style_traits": ["fringe", "textured", "swept", "soft", "modern"],
+    "style_traits": [
+      "fringe",
+      "textured",
+      "swept",
+      "soft",
+      "modern"
+    ],
     "prompt_template": "A modern Korean two-block fringe haircut: straight soft fringe FALLING FORWARD across the forehead, hair reaching DOWN to just above the eyebrows, completely covering the upper forehead - the fringe must be VISIBLY HANGING DOWN, NOT swept back, NOT raised. Medium-length layered hair on top, soft texture, slightly side-swept. Closely tapered sides and back but NOT shaved - longer than a fade, sitting flat against the head. No volume on top, no pompadour height, hair lies down naturally. K-pop young-modern styling. The source hair must be restructured so the fringe falls FORWARD over the brow line",
     "mask_params": {
       "offset_ratio": 0.22,
       "extend_ratio": 0.55,
-      "lateral_extend": 0.20,
+      "lateral_extend": 0.2,
       "ear_level_ratio": 0.82,
       "feather_frac": 0.024
     },
     "guidance": 70.0,
-    "upsampling": false
+    "upsampling": false,
+    "suppress_forelock": true
   },
   {
     "id": "mens_curly_volume",
     "name": "Voluminous Natural Curls",
     "gender": "male",
     "reference_image_path": "ref1_full_beard.jpg",
-    "suits_face": ["oval", "long", "square"],
-    "avoid_for": ["round", "diamond"],
-    "compat_texture": ["wavy", "curly", "coiled"],
+    "suits_face": [
+      "oval",
+      "long",
+      "square"
+    ],
+    "avoid_for": [
+      "round",
+      "diamond"
+    ],
+    "compat_texture": [
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "medium",
-    "occasion": ["daily", "party"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "party"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "low",
     "popularity_boost": 4,
     "quality_tier": "high",
-    "style_traits": ["curly", "voluminous", "natural", "textured", "wavy"]
+    "style_traits": [
+      "curly",
+      "voluminous",
+      "natural",
+      "textured",
+      "wavy"
+    ]
   },
   {
     "id": "mens_classic_side_part",
     "name": "Classic Side Part",
     "gender": "male",
-    "suits_face": ["oval", "square", "heart"],
-    "avoid_for": ["round"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "oval",
+      "square",
+      "heart"
+    ],
+    "avoid_for": [
+      "round"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "short",
-    "occasion": ["daily", "professional"],
-    "cultural": ["modern", "classic"],
+    "occasion": [
+      "daily",
+      "professional"
+    ],
+    "cultural": [
+      "modern",
+      "classic"
+    ],
     "maintenance": "medium",
     "popularity_boost": 3,
-    "style_traits": ["side-part", "structured", "sleek", "professional", "classic"],
+    "style_traits": [
+      "side-part",
+      "structured",
+      "sleek",
+      "professional",
+      "classic"
+    ],
     "prompt_template": "A classic Indian office-going men's side-part haircut: hair on top approximately 3 centimetres long, neatly combed FROM A CLEAN SHARP SIDE PARTING to one side - the parting must be CLEARLY VISIBLE as a thin straight line on the scalp. Hair sits flat and polished, NOT raised, NOT swept up. Sides and back trimmed short but NOT faded, slightly tapered. Conservative professional styling, suitable for Indian corporate offices. Hairline neat and clean. The source hair must be restructured to show the sharp side parting",
     "guidance": 70.0,
-    "upsampling": false
+    "upsampling": false,
+    "suppress_forelock": true
   },
   {
     "id": "mens_textured_crop",
     "name": "Textured Crop with Fade",
     "gender": "male",
-    "suits_face": ["oval", "round", "heart", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "coiled"
+    ],
     "length": "short",
-    "occasion": ["daily", "professional", "party"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "professional",
+      "party"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "medium",
     "popularity_boost": 4,
-    "style_traits": ["fade", "textured", "structured", "short", "swept"],
+    "style_traits": [
+      "fade",
+      "textured",
+      "structured",
+      "short",
+      "swept"
+    ],
     "prompt_template": "A textured crop haircut: hair on top CROPPED VERY SHORT to 2-3 centimetres maximum with choppy uneven ends giving a deliberately messy texture, hair pushed slightly forward over the forehead in a short blunt fringe. Tight low skin fade on the sides and back, sharp horizontal fade line, very short above the ears. Modern barbershop cut. Hair must be NOTICEABLY SHORTER than the source, NOT raised tall, NOT swept back, NOT a pompadour. The source hair must be cut down to this short cropped shape, not just edited slightly",
     "mask_params": {
       "offset_ratio": 0.08,
       "extend_ratio": 0.35,
-      "lateral_extend": 0.10,
+      "lateral_extend": 0.1,
       "ear_level_ratio": 0.72,
-      "feather_frac": 0.020
+      "feather_frac": 0.02
     },
     "guidance": 70.0,
-    "upsampling": false
+    "upsampling": false,
+    "suppress_forelock": true
   },
   {
     "id": "mens_buzz_cut",
     "name": "Classic Buzz Cut",
     "gender": "male",
     "reference_image_path": "ref6_buzz_cut.jpg",
-    "suits_face": ["oval", "square", "diamond"],
-    "avoid_for": ["long", "heart"],
-    "compat_texture": ["straight", "wavy", "curly", "coiled"],
+    "suits_face": [
+      "oval",
+      "square",
+      "diamond"
+    ],
+    "avoid_for": [
+      "long",
+      "heart"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "very short",
-    "occasion": ["daily", "professional", "sport"],
-    "cultural": ["modern", "minimalist"],
+    "occasion": [
+      "daily",
+      "professional",
+      "sport"
+    ],
+    "cultural": [
+      "modern",
+      "minimalist"
+    ],
     "maintenance": "low",
     "popularity_boost": 4,
     "quality_tier": "high",
-    "style_traits": ["buzz cut", "shaved", "very short", "structured", "low maintenance"],
-    "upsampling": false
+    "style_traits": [
+      "buzz cut",
+      "shaved",
+      "very short",
+      "structured",
+      "low maintenance"
+    ],
+    "upsampling": false,
+    "suppress_forelock": true
   },
   {
     "id": "mens_top_knot",
     "name": "Top Knot with Side Flow",
     "gender": "male",
     "reference_image_path": "ref8_top_knot.jpg",
-    "suits_face": ["oval", "long", "square"],
-    "avoid_for": ["round"],
-    "compat_texture": ["straight", "wavy", "curly"],
+    "suits_face": [
+      "oval",
+      "long",
+      "square"
+    ],
+    "avoid_for": [
+      "round"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly"
+    ],
     "length": "long",
-    "occasion": ["daily", "party"],
-    "cultural": ["modern", "bohemian"],
+    "occasion": [
+      "daily",
+      "party"
+    ],
+    "cultural": [
+      "modern",
+      "bohemian"
+    ],
     "maintenance": "medium",
     "popularity_boost": 3,
     "quality_tier": "limited",
-    "style_traits": ["top knot", "man bun", "tied up", "long sides", "modern"]
+    "style_traits": [
+      "top knot",
+      "man bun",
+      "tied up",
+      "long sides",
+      "modern"
+    ]
   },
   {
     "id": "mens_curly_afro",
     "name": "Voluminous Curly Afro",
     "gender": "male",
     "reference_image_path": "ref9_afro.jpg",
-    "suits_face": ["oval", "long", "square"],
-    "avoid_for": ["round", "diamond"],
-    "compat_texture": ["wavy", "curly", "coiled"],
+    "suits_face": [
+      "oval",
+      "long",
+      "square"
+    ],
+    "avoid_for": [
+      "round",
+      "diamond"
+    ],
+    "compat_texture": [
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "medium",
-    "occasion": ["daily", "party", "festive"],
-    "cultural": ["modern", "natural"],
+    "occasion": [
+      "daily",
+      "party",
+      "festive"
+    ],
+    "cultural": [
+      "modern",
+      "natural"
+    ],
     "maintenance": "medium",
     "popularity_boost": 4,
     "quality_tier": "high",
-    "style_traits": ["afro", "curly", "voluminous", "natural", "tight curls"]
+    "style_traits": [
+      "afro",
+      "curly",
+      "voluminous",
+      "natural",
+      "tight curls"
+    ]
   },
   {
     "id": "mens_long_flowing",
     "name": "Long Flowing Hair",
     "gender": "male",
     "reference_image_path": "ref11_long_hair.jpg",
-    "suits_face": ["oval", "square", "diamond"],
-    "avoid_for": ["round"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "oval",
+      "square",
+      "diamond"
+    ],
+    "avoid_for": [
+      "round"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "long",
-    "occasion": ["daily", "party"],
-    "cultural": ["modern", "bohemian"],
+    "occasion": [
+      "daily",
+      "party"
+    ],
+    "cultural": [
+      "modern",
+      "bohemian"
+    ],
     "maintenance": "medium",
     "popularity_boost": 3,
     "quality_tier": "limited",
-    "style_traits": ["long", "flowing", "shoulder-length", "wavy", "natural"]
+    "style_traits": [
+      "long",
+      "flowing",
+      "shoulder-length",
+      "wavy",
+      "natural"
+    ]
   },
-
   {
     "id": "indian_braid_long",
     "name": "Classic Long Braid",
     "gender": "female",
     "reference_image_path": "ref_f1_braid_a.jpg",
-    "suits_face": ["oval", "round", "heart", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "coiled"
+    ],
     "length": "long",
-    "occasion": ["daily", "traditional", "festive"],
-    "cultural": ["traditional", "indian-classic"],
+    "occasion": [
+      "daily",
+      "traditional",
+      "festive"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-classic"
+    ],
     "maintenance": "low",
     "popularity_boost": 5,
     "quality_tier": "limited",
-    "style_traits": ["braid", "long", "traditional", "neat", "structured"],
+    "style_traits": [
+      "braid",
+      "long",
+      "traditional",
+      "neat",
+      "structured"
+    ],
     "prompt_template": "A classic long Indian braid (chotti): hair pulled back TIGHTLY from the forehead with a centre or side parting (the parting must be CLEARLY VISIBLE as a clean line on the scalp), gathered at the nape, then PLAITED into a SINGLE THICK BRAID with VISIBLE PLAIT SEGMENTS hanging down the back to near waist length. The braid is NEAT, STRUCTURED, traditional - the individual plait crosses must be visible. Hair must NOT be loose or flowing; it must be tightly braided. Hairline visible and clean. Often worn for daily traditional wear, festive occasions, or with a small white-jasmine garland (gajra) tucked at the top of the braid. The source hair must be fully restructured into this braided shape",
     "guidance": 70.0
   },
@@ -227,15 +495,35 @@
     "id": "modern_chin_bob",
     "name": "Modern Chin Bob",
     "gender": "female",
-    "suits_face": ["oval", "long", "heart"],
-    "avoid_for": ["round"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "oval",
+      "long",
+      "heart"
+    ],
+    "avoid_for": [
+      "round"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "short",
-    "occasion": ["daily", "professional"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "professional"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "medium",
     "popularity_boost": 4,
-    "style_traits": ["bob", "blunt", "sleek", "modern", "structured"],
+    "style_traits": [
+      "bob",
+      "blunt",
+      "sleek",
+      "modern",
+      "structured"
+    ],
     "prompt_template": "A modern chin-length blunt bob: hair cut SHARPLY straight across at chin level (jaw line) - the bottom edge must be a CLEAN HORIZONTAL LINE level with the chin, not feathered, not layered. Hair falls smoothly from a centre or slight side parting, hanging flat to chin level on both sides of the face, no longer. Sleek polished finish, modern salon styling popular for working professional women. The source hair must be visibly SHORTER than before, ending at chin level, not flowing past the shoulders",
     "guidance": 70.0,
     "needs_reference": true
@@ -244,15 +532,37 @@
     "id": "side_swept_layers",
     "name": "Side-Swept Layers",
     "gender": "female",
-    "suits_face": ["round", "square", "heart", "oval"],
-    "avoid_for": ["long"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "round",
+      "square",
+      "heart",
+      "oval"
+    ],
+    "avoid_for": [
+      "long"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "medium",
-    "occasion": ["daily", "professional", "party"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "professional",
+      "party"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "low",
     "popularity_boost": 5,
-    "style_traits": ["layered", "side-swept", "fringe", "soft", "wavy"],
+    "style_traits": [
+      "layered",
+      "side-swept",
+      "fringe",
+      "soft",
+      "wavy"
+    ],
     "prompt_template": "Medium-length hair with VISIBLE LAYERS at multiple depths: hair cut in distinct stepped layers, the shortest layer framing the face just below the cheekbones, mid layer at the jawline, longest layer at shoulder length - the layer EDGES must be VISIBLY DISTINCT from one another. Hair swept to one side from a deep side parting, soft side-swept fringe across the forehead. Soft wavy texture throughout, modern Indian salon styling for working women. Different from a bob (layered, not blunt) and different from curtain bangs (sweep to one side, not centre-parted)",
     "guidance": 70.0,
     "needs_reference": true
@@ -262,16 +572,39 @@
     "name": "Traditional Bridal Bun (Juda)",
     "gender": "female",
     "reference_image_path": "ref_f4_bridal_a.jpg",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "coiled"
+    ],
     "length": "long",
-    "occasion": ["bridal", "festive"],
-    "cultural": ["traditional", "indian-bridal"],
+    "occasion": [
+      "bridal",
+      "festive"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-bridal"
+    ],
     "maintenance": "high",
     "popularity_boost": 5,
     "quality_tier": "limited",
-    "style_traits": ["updo", "bun", "bridal", "traditional", "elegant", "structured"],
+    "style_traits": [
+      "updo",
+      "bun",
+      "bridal",
+      "traditional",
+      "elegant",
+      "structured"
+    ],
     "prompt_template": "A traditional Indian bridal bun (juda): hair pulled back from the forehead, gathered up high at the crown of the head, and wound into a large structured bun decorated with flowers, hairpins, or ornaments. Sometimes a long covering veil drapes from the bun. Often paired with maang tikka jewellery on the centre parting. Heavy, formal, elegant, occupies significant volume above and behind the head"
   },
   {
@@ -279,322 +612,799 @@
     "name": "Curtain Bangs with Medium Length",
     "gender": "female",
     "reference_image_path": "ref_f9_bangs_a.jpg",
-    "suits_face": ["round", "heart", "square", "oval"],
-    "avoid_for": ["long"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "round",
+      "heart",
+      "square",
+      "oval"
+    ],
+    "avoid_for": [
+      "long"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "medium",
-    "occasion": ["daily", "party"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "party"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
     "quality_tier": "high",
-    "style_traits": ["fringe", "curtain bangs", "soft", "side-swept", "modern"],
+    "style_traits": [
+      "fringe",
+      "curtain bangs",
+      "soft",
+      "side-swept",
+      "modern"
+    ],
     "prompt_template": "Medium-length hair with modern CURTAIN BANGS: hair falls to shoulder length, with face-framing CURTAIN BANGS PARTED IN THE CENTRE and SWEEPING OUTWARD to either side of the face - the bangs are LONGEST near the cheekbones and gradually blend back into the side hair, like opening curtains framing a window. The centre forehead is PARTLY VISIBLE between the parted bangs, NOT fully covered. The rest of the hair is medium length with soft wavy texture. Soft, modern, feminine Indian salon styling. The source hair must be restructured to show the centre-parted curtain bangs clearly; this is NOT a full straight fringe and NOT just side-swept layers",
     "guidance": 70.0
   },
-
   {
     "id": "maharashtrian_bridal",
     "name": "Maharashtrian Bridal Updo with Mundavalya",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "long",
-    "occasion": ["bridal", "festive", "traditional"],
-    "cultural": ["traditional", "indian-bridal", "regional", "maharashtrian"],
+    "occasion": [
+      "bridal",
+      "festive",
+      "traditional"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-bridal",
+      "regional",
+      "maharashtrian"
+    ],
     "maintenance": "high",
     "popularity_boost": 5,
-    "style_traits": ["updo", "bun", "bridal", "structured", "traditional"],
+    "style_traits": [
+      "updo",
+      "bun",
+      "bridal",
+      "structured",
+      "traditional"
+    ],
     "prompt_template": "A traditional Maharashtrian bridal updo: hair pulled back tightly from a centre parting, gathered into a high structured bun (khopa) decorated with mogra flowers and a mundavalya (forehead pearl strings) draped from the bun across the forehead. Heavy traditional ornaments, hairline visible and clean, the bun sits high at the crown"
   },
   {
     "id": "bengali_bridal",
     "name": "Bengali Bridal Bun with Mukut",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "long",
-    "occasion": ["bridal", "festive", "traditional"],
-    "cultural": ["traditional", "indian-bridal", "regional", "bengali"],
+    "occasion": [
+      "bridal",
+      "festive",
+      "traditional"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-bridal",
+      "regional",
+      "bengali"
+    ],
     "maintenance": "high",
     "popularity_boost": 5,
-    "style_traits": ["updo", "bun", "bridal", "elegant", "traditional"],
+    "style_traits": [
+      "updo",
+      "bun",
+      "bridal",
+      "elegant",
+      "traditional"
+    ],
     "prompt_template": "A Bengali bridal hairstyle: hair pulled back from a centre parting into a soft low bun at the nape, with a tall white sholar mukut (pith headdress) sitting on top of the head and a smaller matching topor for the groom optional. Forehead decorated with red and white chandan tikka patterns. Hair is sleek, traditional, ceremonial"
   },
   {
     "id": "kerala_bridal",
     "name": "Kerala Bridal Braid with Jasmine",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "long",
-    "occasion": ["bridal", "festive", "traditional"],
-    "cultural": ["traditional", "indian-bridal", "regional", "kerala"],
+    "occasion": [
+      "bridal",
+      "festive",
+      "traditional"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-bridal",
+      "regional",
+      "kerala"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
-    "style_traits": ["braid", "long", "bridal", "traditional", "floral"],
+    "style_traits": [
+      "braid",
+      "long",
+      "bridal",
+      "traditional",
+      "floral"
+    ],
     "prompt_template": "A Kerala traditional bridal braid (kondai): hair gathered from a centre parting, plaited into a single thick braid hanging down the back to waist length, completely wrapped in a long garland of fresh white jasmine flowers (mullapoo) and small marigold accents. Sleek polished hair at the crown, neat hairline"
   },
   {
     "id": "punjabi_bridal_paranda",
     "name": "Punjabi Bridal Braid with Paranda",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "long",
-    "occasion": ["bridal", "festive", "traditional"],
-    "cultural": ["traditional", "indian-bridal", "regional", "punjabi"],
+    "occasion": [
+      "bridal",
+      "festive",
+      "traditional"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-bridal",
+      "regional",
+      "punjabi"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
-    "style_traits": ["braid", "long", "bridal", "traditional", "ornamented"],
+    "style_traits": [
+      "braid",
+      "long",
+      "bridal",
+      "traditional",
+      "ornamented"
+    ],
     "prompt_template": "A Punjabi bridal hairstyle: hair pulled back tightly into a sleek long braid extending past the waist, with a colourful tasselled paranda (decorative braid extension with silk threads and small mirror-work) plaited into the braid, multiple bright tassels hanging from the end. Hairline neat, centre parting visible at the top"
   },
   {
     "id": "tamil_bridal_jada",
     "name": "Tamil Bridal Jada with Hair Ornaments",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "long",
-    "occasion": ["bridal", "festive", "traditional"],
-    "cultural": ["traditional", "indian-bridal", "regional", "tamil"],
+    "occasion": [
+      "bridal",
+      "festive",
+      "traditional"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-bridal",
+      "regional",
+      "tamil"
+    ],
     "maintenance": "high",
     "popularity_boost": 5,
-    "style_traits": ["braid", "long", "bridal", "traditional", "ornamented"],
+    "style_traits": [
+      "braid",
+      "long",
+      "bridal",
+      "traditional",
+      "ornamented"
+    ],
     "prompt_template": "A Tamil bridal jada (braided long hair): hair pulled back from a centre parting and plaited into a thick long braid down the back, decorated with traditional gold-tone hair ornaments (jadanagam, thalaisaamaan) running along the length of the braid, and white jasmine flowers (mullapoo) wrapped around the crown. Sleek polished hair, ceremonial"
   },
-
   {
     "id": "south_indian_braid_jasmine",
     "name": "Classic South Indian Braid with Jasmine",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "long",
-    "occasion": ["daily", "traditional", "festive"],
-    "cultural": ["traditional", "indian-classic", "regional", "tamil", "kerala"],
+    "occasion": [
+      "daily",
+      "traditional",
+      "festive"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-classic",
+      "regional",
+      "tamil",
+      "kerala"
+    ],
     "maintenance": "low",
     "popularity_boost": 5,
-    "style_traits": ["braid", "long", "traditional", "floral", "daily"],
+    "style_traits": [
+      "braid",
+      "long",
+      "traditional",
+      "floral",
+      "daily"
+    ],
     "prompt_template": "A classic South Indian braid (nadu-rekai): hair pulled back from a clean centre parting, plaited into a single neat braid hanging down the back to mid-back length, with a small string of fresh white jasmine flowers tucked at the top of the braid. Simple, traditional, suitable for everyday wear or temple visits"
   },
   {
     "id": "gujarati_sari_pallu_braid",
     "name": "Gujarati Braid with Sari Pallu Drape",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly"
+    ],
     "length": "long",
-    "occasion": ["festive", "traditional"],
-    "cultural": ["traditional", "indian-classic", "regional", "gujarati"],
+    "occasion": [
+      "festive",
+      "traditional"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-classic",
+      "regional",
+      "gujarati"
+    ],
     "maintenance": "low",
     "popularity_boost": 4,
-    "style_traits": ["braid", "long", "traditional", "festive"],
+    "style_traits": [
+      "braid",
+      "long",
+      "traditional",
+      "festive"
+    ],
     "prompt_template": "A Gujarati festive braid: hair plaited into a long single braid down the back, with a colourful Gujarati sari pallu draped over the head and one shoulder framing the face. Hair pulled back neatly with a centre parting, traditional ghagra-choli styling, festive bandhani patterns implied"
   },
   {
     "id": "marathi_khopa",
     "name": "Maharashtrian Khopa (Side Bun)",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly", "coiled"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly",
+      "coiled"
+    ],
     "length": "long",
-    "occasion": ["traditional", "festive"],
-    "cultural": ["traditional", "indian-classic", "regional", "marathi"],
+    "occasion": [
+      "traditional",
+      "festive"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-classic",
+      "regional",
+      "marathi"
+    ],
     "maintenance": "medium",
     "popularity_boost": 4,
-    "style_traits": ["bun", "side", "traditional", "structured"],
+    "style_traits": [
+      "bun",
+      "side",
+      "traditional",
+      "structured"
+    ],
     "prompt_template": "A Maharashtrian khopa: hair pulled back from a centre parting and gathered into a low side bun resting on the left shoulder, decorated with a small string of mogra flowers wrapped around the bun. Traditional nauvari sari styling implied, sleek polished hair at the crown"
   },
   {
     "id": "kashmiri_kalpushya",
     "name": "Kashmiri Long Braid with Kalpushya",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly"
+    ],
     "length": "long",
-    "occasion": ["traditional", "festive", "bridal"],
-    "cultural": ["traditional", "indian-classic", "regional", "kashmiri"],
+    "occasion": [
+      "traditional",
+      "festive",
+      "bridal"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-classic",
+      "regional",
+      "kashmiri"
+    ],
     "maintenance": "medium",
     "popularity_boost": 3,
-    "style_traits": ["braid", "long", "traditional", "regional"],
+    "style_traits": [
+      "braid",
+      "long",
+      "traditional",
+      "regional"
+    ],
     "prompt_template": "A Kashmiri traditional hairstyle: hair plaited into multiple thin braids gathered at the back into a longer thick braid (kalpushya), decorated with simple silver-tone clips and small fabric tassels. Hair pulled back from a centre parting, traditional pheran-style framing"
   },
   {
     "id": "sindhi_traditional",
     "name": "Sindhi Traditional Side Plait",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly"
+    ],
     "length": "long",
-    "occasion": ["traditional", "festive"],
-    "cultural": ["traditional", "indian-classic", "regional", "sindhi"],
+    "occasion": [
+      "traditional",
+      "festive"
+    ],
+    "cultural": [
+      "traditional",
+      "indian-classic",
+      "regional",
+      "sindhi"
+    ],
     "maintenance": "low",
     "popularity_boost": 3,
-    "style_traits": ["braid", "side", "traditional", "regional"],
+    "style_traits": [
+      "braid",
+      "side",
+      "traditional",
+      "regional"
+    ],
     "prompt_template": "A Sindhi traditional hairstyle: hair plaited into a single long side braid resting over the right shoulder, decorated with a small ornamental clip at the top, hair pulled back from a side parting. Traditional Sindhi ghagra-choli styling implied, neat hairline"
   },
-
   {
     "id": "mehndi_loose_curls",
     "name": "Mehndi Function Loose Curls with Flowers",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly"
+    ],
     "length": "long",
-    "occasion": ["festive", "bridal"],
-    "cultural": ["modern", "indian-bridal"],
+    "occasion": [
+      "festive",
+      "bridal"
+    ],
+    "cultural": [
+      "modern",
+      "indian-bridal"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
-    "style_traits": ["loose curls", "wavy", "festive", "floral"],
+    "style_traits": [
+      "loose curls",
+      "wavy",
+      "festive",
+      "floral"
+    ],
     "prompt_template": "Mehndi function hairstyle: soft loose curls cascading over the shoulders, hair half-pulled-back with a small braid or twist on one side, decorated with fresh yellow marigold and white jasmine flowers tucked behind the ear. Romantic festive styling for the bride's mehndi ceremony"
   },
   {
     "id": "sangeet_side_braid",
     "name": "Sangeet Side Fishtail Braid",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy", "curly"],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly"
+    ],
     "length": "long",
-    "occasion": ["festive", "party", "bridal"],
-    "cultural": ["modern", "indian-bridal"],
+    "occasion": [
+      "festive",
+      "party",
+      "bridal"
+    ],
+    "cultural": [
+      "modern",
+      "indian-bridal"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
-    "style_traits": ["fishtail", "braid", "side", "festive", "modern"],
+    "style_traits": [
+      "fishtail",
+      "braid",
+      "side",
+      "festive",
+      "modern"
+    ],
     "prompt_template": "Sangeet hairstyle: hair pulled to one side and plaited into a loose textured fishtail braid resting over the shoulder, with small face-framing tendrils left out near the temples and a few small flowers or pearl pins along the braid. Soft modern bridal styling for sangeet night"
   },
   {
     "id": "reception_polished_updo",
     "name": "Reception Polished Low Chignon",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy"],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "long",
-    "occasion": ["festive", "party", "bridal"],
-    "cultural": ["modern", "indian-bridal"],
+    "occasion": [
+      "festive",
+      "party",
+      "bridal"
+    ],
+    "cultural": [
+      "modern",
+      "indian-bridal"
+    ],
     "maintenance": "high",
     "popularity_boost": 5,
-    "style_traits": ["chignon", "updo", "polished", "elegant", "modern"],
+    "style_traits": [
+      "chignon",
+      "updo",
+      "polished",
+      "elegant",
+      "modern"
+    ],
     "prompt_template": "Reception hairstyle: hair pulled back from a side parting into a sleek polished low chignon at the nape of the neck, with a few face-framing strands left loose. Modern bridal reception look, elegant and minimal, paired with statement earrings"
   },
-
   {
     "id": "punjabi_modern_taper",
     "name": "Punjabi Modern Taper with Beard",
     "gender": "male",
-    "suits_face": ["oval", "square", "round", "diamond"],
-    "avoid_for": ["heart"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "oval",
+      "square",
+      "round",
+      "diamond"
+    ],
+    "avoid_for": [
+      "heart"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "short",
-    "occasion": ["daily", "professional", "party"],
-    "cultural": ["modern", "regional", "punjabi"],
+    "occasion": [
+      "daily",
+      "professional",
+      "party"
+    ],
+    "cultural": [
+      "modern",
+      "regional",
+      "punjabi"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
-    "style_traits": ["taper", "side-part", "modern", "structured"],
+    "style_traits": [
+      "taper",
+      "side-part",
+      "modern",
+      "structured"
+    ],
     "prompt_template": "A modern Punjabi men's taper cut: hair on top approximately 3-4 centimetres long, swept to one side from a clean side parting, with a sharp taper fade on the sides and back going from short on top to skin at the nape. Hairline edge-up sharp, modern barbershop styling. Pairs with a short beard"
   },
   {
     "id": "kpop_inspired_fringe",
     "name": "K-Pop Inspired Layered Fringe",
     "gender": "male",
-    "suits_face": ["oval", "square", "heart"],
-    "avoid_for": ["round"],
-    "compat_texture": ["straight", "wavy"],
+    "suits_face": [
+      "oval",
+      "square",
+      "heart"
+    ],
+    "avoid_for": [
+      "round"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "medium",
-    "occasion": ["daily", "party"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "party"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
-    "style_traits": ["fringe", "layered", "modern", "soft", "asymmetric"],
+    "style_traits": [
+      "fringe",
+      "layered",
+      "modern",
+      "soft",
+      "asymmetric"
+    ],
     "prompt_template": "A K-pop inspired men's haircut: medium-length hair on top approximately 6-8 centimetres, layered and slightly asymmetric, with a soft side-swept fringe falling forward and partly covering one eyebrow. Sides tapered short but not faded to skin. Soft modern Asian-inspired styling popular among young urban Indian men"
   },
   {
     "id": "south_indian_modern_fade",
     "name": "South Indian Modern Fade with Top Volume",
     "gender": "male",
-    "suits_face": ["oval", "square", "round", "diamond"],
-    "avoid_for": ["heart"],
-    "compat_texture": ["straight", "wavy", "curly"],
+    "suits_face": [
+      "oval",
+      "square",
+      "round",
+      "diamond"
+    ],
+    "avoid_for": [
+      "heart"
+    ],
+    "compat_texture": [
+      "straight",
+      "wavy",
+      "curly"
+    ],
     "length": "short",
-    "occasion": ["daily", "professional", "party"],
-    "cultural": ["modern", "regional"],
+    "occasion": [
+      "daily",
+      "professional",
+      "party"
+    ],
+    "cultural": [
+      "modern",
+      "regional"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
-    "style_traits": ["fade", "volume", "modern", "structured", "indian"],
+    "style_traits": [
+      "fade",
+      "volume",
+      "modern",
+      "structured",
+      "indian"
+    ],
     "prompt_template": "A modern South Indian men's haircut: hair on top approximately 4-5 centimetres tall with natural volume, gently swept back from the forehead, with a mid-skin fade on the sides and back going from a defined horizontal line above the ear down to skin. Sharp clean hairline. Modern Chennai/Hyderabad/Bangalore barbershop styling"
   },
   {
     "id": "indian_office_classic",
     "name": "Indian Office Classic Side Part",
     "gender": "male",
-    "suits_face": ["oval", "square", "heart", "round"],
+    "suits_face": [
+      "oval",
+      "square",
+      "heart",
+      "round"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy"],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "short",
-    "occasion": ["daily", "professional"],
-    "cultural": ["modern", "classic"],
+    "occasion": [
+      "daily",
+      "professional"
+    ],
+    "cultural": [
+      "modern",
+      "classic"
+    ],
     "maintenance": "low",
     "popularity_boost": 4,
-    "style_traits": ["side-part", "classic", "professional", "low-maintenance"],
+    "style_traits": [
+      "side-part",
+      "classic",
+      "professional",
+      "low-maintenance"
+    ],
     "prompt_template": "A classic Indian office-going men's haircut: hair on top approximately 3 centimetres long, neatly combed from a clean side parting to one side, sides and back trimmed short but not faded. Conservative professional styling, low maintenance, suitable for corporate offices across India. Hairline neat"
   },
-
   {
     "id": "bollywood_blow_dry",
     "name": "Bollywood Blow Dry with Soft Waves",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy"],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "long",
-    "occasion": ["party", "festive", "professional"],
-    "cultural": ["modern", "bollywood"],
+    "occasion": [
+      "party",
+      "festive",
+      "professional"
+    ],
+    "cultural": [
+      "modern",
+      "bollywood"
+    ],
     "maintenance": "high",
     "popularity_boost": 5,
-    "style_traits": ["blow dry", "waves", "voluminous", "polished", "modern"],
+    "style_traits": [
+      "blow dry",
+      "waves",
+      "voluminous",
+      "polished",
+      "modern"
+    ],
     "prompt_template": "A polished Bollywood-style blow dry: long hair flowing past the shoulders with voluminous soft waves throughout, hair parted to one side and swept gently away from the face. Glossy, healthy, salon-fresh finish. Modern Indian celebrity styling popular for parties and red carpets"
   },
   {
     "id": "indian_high_pony",
     "name": "Indian Sleek High Ponytail",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy"],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "long",
-    "occasion": ["daily", "professional", "party"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "professional",
+      "party"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "low",
     "popularity_boost": 5,
-    "style_traits": ["ponytail", "sleek", "high", "modern", "polished"],
+    "style_traits": [
+      "ponytail",
+      "sleek",
+      "high",
+      "modern",
+      "polished"
+    ],
     "prompt_template": "A sleek high ponytail: hair pulled back tightly from the forehead and gathered into a high ponytail at the crown of the head, the ponytail falling smooth and straight down the back. Hairline visible and clean, no fringe, no flyaways. Modern Indian urban styling, professional or party-ready"
   },
   {
     "id": "layered_lob_with_curtain_bangs",
     "name": "Layered Lob with Curtain Bangs",
     "gender": "female",
-    "suits_face": ["oval", "round", "heart", "square", "long"],
+    "suits_face": [
+      "oval",
+      "round",
+      "heart",
+      "square",
+      "long"
+    ],
     "avoid_for": [],
-    "compat_texture": ["straight", "wavy"],
+    "compat_texture": [
+      "straight",
+      "wavy"
+    ],
     "length": "medium",
-    "occasion": ["daily", "professional", "party"],
-    "cultural": ["modern"],
+    "occasion": [
+      "daily",
+      "professional",
+      "party"
+    ],
+    "cultural": [
+      "modern"
+    ],
     "maintenance": "medium",
     "popularity_boost": 5,
-    "style_traits": ["lob", "layered", "curtain bangs", "modern", "soft"],
+    "style_traits": [
+      "lob",
+      "layered",
+      "curtain bangs",
+      "modern",
+      "soft"
+    ],
     "prompt_template": "A layered long bob (lob): hair cut to just above the shoulders with subtle layers throughout for soft movement, paired with face-framing curtain bangs parted in the centre and sweeping outward toward the cheekbones. Modern Indian salon cut, popular for working women in their 20s-30s"
   }
 ]
