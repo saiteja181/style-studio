@@ -13,7 +13,7 @@
     "maintenance": "high",
     "popularity_boost": 5,
     "style_traits": ["pompadour", "fade", "structured", "height on top", "swept up", "undercut"],
-    "prompt_template": "A bold modern pompadour: hair on top stands 6-8 centimetres tall, dramatic vertical volume sweeping up and back from the forehead in a single high wave. Razor-sharp skin fade on the sides and back - hair clipped to near-zero on the temples and around the ears, with a crisp horizontal fade line above the ear. Pronounced undercut. Hairline sharp and defined. Heavy structured shape, polished and styled with product",
+    "prompt_template": "A bold modern pompadour: hair on top stands 6-8 centimetres TALL with dramatic VERTICAL VOLUME, sweeping up and back from the forehead in a single high wave - the silhouette must look noticeably TALLER on top than the source. Razor-sharp skin fade on the sides and back, hair clipped to near-zero on the temples and around the ears, crisp horizontal fade line above the ear. Pronounced undercut. Hairline sharp and defined. Heavy structured shape, polished and styled with product. The source hair must be fully restructured into this shape, not just lightly edited",
     "mask_params": {
       "offset_ratio": -0.02,
       "extend_ratio": 1.20,
@@ -21,7 +21,7 @@
       "ear_level_ratio": 0.70,
       "feather_frac": 0.018
     },
-    "guidance": 55.0,
+    "guidance": 70.0,
     "upsampling": false
   },
   {
@@ -71,7 +71,7 @@
     "popularity_boost": 4,
     "quality_tier": "medium",
     "style_traits": ["fringe", "textured", "swept", "soft", "modern"],
-    "prompt_template": "A modern Korean two-block fringe haircut: straight soft fringe falling forward across the forehead and reaching down to just above the eyebrows, completely covering the upper forehead. Medium-length layered hair on top, soft texture, slightly side-swept. Closely tapered sides and back, but NOT shaved - longer than a fade, sitting flat against the head. No volume on top, no pompadour shape, hair lies down naturally. K-pop styling, young modern look",
+    "prompt_template": "A modern Korean two-block fringe haircut: straight soft fringe FALLING FORWARD across the forehead, hair reaching DOWN to just above the eyebrows, completely covering the upper forehead - the fringe must be VISIBLY HANGING DOWN, NOT swept back, NOT raised. Medium-length layered hair on top, soft texture, slightly side-swept. Closely tapered sides and back but NOT shaved - longer than a fade, sitting flat against the head. No volume on top, no pompadour height, hair lies down naturally. K-pop young-modern styling. The source hair must be restructured so the fringe falls FORWARD over the brow line",
     "mask_params": {
       "offset_ratio": 0.22,
       "extend_ratio": 0.55,
@@ -79,7 +79,7 @@
       "ear_level_ratio": 0.82,
       "feather_frac": 0.024
     },
-    "guidance": 50.0,
+    "guidance": 70.0,
     "upsampling": false
   },
   {
@@ -111,6 +111,8 @@
     "maintenance": "medium",
     "popularity_boost": 3,
     "style_traits": ["side-part", "structured", "sleek", "professional", "classic"],
+    "prompt_template": "A classic Indian office-going men's side-part haircut: hair on top approximately 3 centimetres long, neatly combed FROM A CLEAN SHARP SIDE PARTING to one side - the parting must be CLEARLY VISIBLE as a thin straight line on the scalp. Hair sits flat and polished, NOT raised, NOT swept up. Sides and back trimmed short but NOT faded, slightly tapered. Conservative professional styling, suitable for Indian corporate offices. Hairline neat and clean. The source hair must be restructured to show the sharp side parting",
+    "guidance": 70.0,
     "upsampling": false
   },
   {
@@ -126,7 +128,7 @@
     "maintenance": "medium",
     "popularity_boost": 4,
     "style_traits": ["fade", "textured", "structured", "short", "swept"],
-    "prompt_template": "A textured crop haircut: hair on top cropped to 2-3 centimetres maximum, choppy uneven ends giving a deliberately messy texture, hair pushed slightly forward over the forehead in a short blunt fringe. Tight low skin fade on the sides and back, sharp horizontal fade line, very short above the ears. Modern barbershop cut. Hair is short and structured, NOT raised tall, NOT swept back",
+    "prompt_template": "A textured crop haircut: hair on top CROPPED VERY SHORT to 2-3 centimetres maximum with choppy uneven ends giving a deliberately messy texture, hair pushed slightly forward over the forehead in a short blunt fringe. Tight low skin fade on the sides and back, sharp horizontal fade line, very short above the ears. Modern barbershop cut. Hair must be NOTICEABLY SHORTER than the source, NOT raised tall, NOT swept back, NOT a pompadour. The source hair must be cut down to this short cropped shape, not just edited slightly",
     "mask_params": {
       "offset_ratio": 0.08,
       "extend_ratio": 0.35,
@@ -134,7 +136,7 @@
       "ear_level_ratio": 0.72,
       "feather_frac": 0.020
     },
-    "guidance": 55.0,
+    "guidance": 70.0,
     "upsampling": false
   },
   {
@@ -218,7 +220,8 @@
     "popularity_boost": 5,
     "quality_tier": "limited",
     "style_traits": ["braid", "long", "traditional", "neat", "structured"],
-    "prompt_template": "A classic long Indian braid (chotti): hair pulled back tightly from the forehead with a centre or side parting, gathered at the nape, then plaited into a single thick braid hanging down past the shoulders, near waist length. The braid is neat, structured, traditional. Hairline visible and clean. Often worn for daily traditional wear, festive occasions, or with a small flower garland (gajra) tucked into the braid"
+    "prompt_template": "A classic long Indian braid (chotti): hair pulled back TIGHTLY from the forehead with a centre or side parting (the parting must be CLEARLY VISIBLE as a clean line on the scalp), gathered at the nape, then PLAITED into a SINGLE THICK BRAID with VISIBLE PLAIT SEGMENTS hanging down the back to near waist length. The braid is NEAT, STRUCTURED, traditional - the individual plait crosses must be visible. Hair must NOT be loose or flowing; it must be tightly braided. Hairline visible and clean. Often worn for daily traditional wear, festive occasions, or with a small white-jasmine garland (gajra) tucked at the top of the braid. The source hair must be fully restructured into this braided shape",
+    "guidance": 70.0
   },
   {
     "id": "modern_chin_bob",
@@ -233,6 +236,8 @@
     "maintenance": "medium",
     "popularity_boost": 4,
     "style_traits": ["bob", "blunt", "sleek", "modern", "structured"],
+    "prompt_template": "A modern chin-length blunt bob: hair cut SHARPLY straight across at chin level (jaw line) - the bottom edge must be a CLEAN HORIZONTAL LINE level with the chin, not feathered, not layered. Hair falls smoothly from a centre or slight side parting, hanging flat to chin level on both sides of the face, no longer. Sleek polished finish, modern salon styling popular for working professional women. The source hair must be visibly SHORTER than before, ending at chin level, not flowing past the shoulders",
+    "guidance": 70.0,
     "needs_reference": true
   },
   {
@@ -248,6 +253,8 @@
     "maintenance": "low",
     "popularity_boost": 5,
     "style_traits": ["layered", "side-swept", "fringe", "soft", "wavy"],
+    "prompt_template": "Medium-length hair with VISIBLE LAYERS at multiple depths: hair cut in distinct stepped layers, the shortest layer framing the face just below the cheekbones, mid layer at the jawline, longest layer at shoulder length - the layer EDGES must be VISIBLY DISTINCT from one another. Hair swept to one side from a deep side parting, soft side-swept fringe across the forehead. Soft wavy texture throughout, modern Indian salon styling for working women. Different from a bob (layered, not blunt) and different from curtain bangs (sweep to one side, not centre-parted)",
+    "guidance": 70.0,
     "needs_reference": true
   },
   {
@@ -282,7 +289,8 @@
     "popularity_boost": 5,
     "quality_tier": "high",
     "style_traits": ["fringe", "curtain bangs", "soft", "side-swept", "modern"],
-    "prompt_template": "Medium-length hair with modern curtain bangs: hair falls to shoulder length, with face-framing curtain bangs parted in the centre and sweeping outward to either side of the face, longest near the cheekbones and gradually blending into the rest of the hair. Soft, modern, feminine styling. The forehead is partly visible through the parted bangs, not fully covered"
+    "prompt_template": "Medium-length hair with modern CURTAIN BANGS: hair falls to shoulder length, with face-framing CURTAIN BANGS PARTED IN THE CENTRE and SWEEPING OUTWARD to either side of the face - the bangs are LONGEST near the cheekbones and gradually blend back into the side hair, like opening curtains framing a window. The centre forehead is PARTLY VISIBLE between the parted bangs, NOT fully covered. The rest of the hair is medium length with soft wavy texture. Soft, modern, feminine Indian salon styling. The source hair must be restructured to show the centre-parted curtain bangs clearly; this is NOT a full straight fringe and NOT just side-swept layers",
+    "guidance": 70.0
   },
 
   {
